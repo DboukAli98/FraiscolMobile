@@ -33,7 +33,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "onesignal-expo-plugin"
     ],
     "experiments": {
       "typedRoutes": true
