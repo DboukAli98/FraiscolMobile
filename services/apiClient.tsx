@@ -28,7 +28,7 @@ const useApiInstance = ({
 
   const apiInstance = useMemo(() => {
     const instance = axios.create({
-      baseURL: process.env.EXPO_PUBLIC_API_BASE_URL,
+      baseURL: "https://schoolfeesapi.azurewebsites.net/",
       headers: {
         ...headers,
       },
@@ -68,7 +68,8 @@ const useApiInstance = ({
           dispatch(clearCredentials());
           
           // Navigate to login screen using Expo Router
-          router.replace("/login");
+          router.replace("/(auth)/login");
+
         }
         return Promise.reject(error);
       }

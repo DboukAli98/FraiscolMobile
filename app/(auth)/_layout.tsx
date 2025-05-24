@@ -4,14 +4,21 @@ import { Stack } from 'expo-router';
 // This layout wraps only authentication routes
 export default function AuthLayout() {
   return (
-    <Stack>
+    <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen 
         name="login" 
         options={{ 
-          headerTitle: "Login"
+          headerTitle: "Login",
+          headerShown: false
         }} 
       />
-      {/* Add other auth screens here */}
+      <Stack.Screen 
+        name="register" 
+        options={{ 
+          headerTitle: "Register",
+          headerShown: false
+        }} 
+      />
     </Stack>
   );
 }

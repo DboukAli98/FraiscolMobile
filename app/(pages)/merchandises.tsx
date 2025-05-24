@@ -12,9 +12,9 @@ const merchandises = () => {
 
 export default merchandises
 
- const styles = StyleSheet.create({
-  container :{
-    flex:1,
-    backgroundColor:colors.background.default
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.default
   }
- }) 
+}) 

@@ -57,6 +57,8 @@ export const useLogin = () => {
         loginByType,
       };
 
+      console.log("usrl :: " , process.env.EXPO_PUBLIC_API_BASE_URL);
+
       try {
         const response = await api.post<LoginResponse>(
           "/api/Authentication/login",

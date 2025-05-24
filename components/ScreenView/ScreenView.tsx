@@ -2,12 +2,12 @@
 import { colors, shapes } from '@/constants/theme';
 import React from 'react';
 import {
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    View,
-    ViewStyle
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  View,
+  ViewStyle
 } from 'react-native';
 
 interface ScreenViewProps {
@@ -72,9 +72,14 @@ export const ScreenView: React.FC<ScreenViewProps> = ({
     return {};
   };
 
-  const containerStyle: ViewStyle = {
+  // Split styles: SafeAreaView gets background, content gets padding
+  const safeAreaStyle: ViewStyle = {
     flex: 1,
     backgroundColor,
+  };
+
+  const contentContainerStyle: ViewStyle = {
+    flex: 1,
     ...getPaddingStyle(),
     ...style,
   };
@@ -84,9 +89,35 @@ export const ScreenView: React.FC<ScreenViewProps> = ({
 
   const scrollViewProps = scrollable ? {
     showsVerticalScrollIndicator: false,
-    contentContainerStyle: contentStyle,
+    contentContainerStyle: {
+      flexGrow: 1,
+      ...getPaddingStyle(),
+      ...contentStyle,
+    },
   } : {};
 
+  // Different rendering based on safeArea and scrollable
+  if (safeArea) {
+    return (
+      <>
+        <StatusBar 
+          barStyle={statusBarStyle}
+          backgroundColor={statusBarBackgroundColor || backgroundColor}
+          translucent={false}
+        />
+        <SafeAreaView style={safeAreaStyle}>
+          <ContentWrapper 
+            style={scrollable ? { flex: 1 } : [contentContainerStyle, contentStyle]}
+            {...scrollViewProps}
+          >
+            {children}
+          </ContentWrapper>
+        </SafeAreaView>
+      </>
+    );
+  }
+
+  // Without SafeAreaView
   return (
     <>
       <StatusBar 
@@ -94,14 +125,12 @@ export const ScreenView: React.FC<ScreenViewProps> = ({
         backgroundColor={statusBarBackgroundColor || backgroundColor}
         translucent={Platform.OS === 'android'}
       />
-      <RootWrapper style={containerStyle}>
-        <ContentWrapper 
-          style={scrollable ? undefined : [{ flex: 1 }, contentStyle]}
-          {...scrollViewProps}
-        >
-          {children}
-        </ContentWrapper>
-      </RootWrapper>
+      <ContentWrapper 
+        style={scrollable ? { flex: 1, backgroundColor } : [{ flex: 1, backgroundColor }, contentContainerStyle, contentStyle]}
+        {...scrollViewProps}
+      >
+        {children}
+      </ContentWrapper>
     </>
   );
 };
