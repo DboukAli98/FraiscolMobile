@@ -1,5 +1,7 @@
 // app/(tabs)/index.tsx
+import { BottomModal } from '@/components/BottomModal/BottomModal';
 import { Card, CardBody, CardHeader } from '@/components/Card/CardComponent';
+import { CustomInput } from '@/components/CustomInput/CustomInput';
 import { GhostIconButton } from '@/components/IconButton/IconButton';
 import { IconLabelCard } from '@/components/IconLabelCard/IconLabelCard';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
@@ -12,17 +14,37 @@ import {
 } from '@/constants/theme';
 import { QuickActionData, QuickActionItem } from '@/GeneralData/GeneralData';
 import useUserInfo from '@/hooks/useUserInfo';
+import { SCREEN_HEIGHT } from '@/utils/stylings';
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 export default function HomeScreen() {
   const userInfo = useUserInfo();
+
+  //#region States
+
+  const [basicModalVisible, setBasicModalVisible] = useState(false);
+
+
+  //#endregion
 
 
   //#region Handlers
 
   const handleQuickAction = (action: QuickActionItem) => {
     router.push(action.route as any);
+  };
+
+
+  const handleExpand = () => {
+    console.log('Modal expanded!');
+
+  };
+
+  const handleCollapse = () => {
+    console.log('Modal collapsed!');
+
   };
 
 
@@ -77,6 +99,15 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
+
+        <View>
+          <IconLabelCard
+            iconName="document-outline"
+            label="Basic Modal"
+            size="md"
+            onPress={() => setBasicModalVisible(true)}
+          />
+        </View>
         <View style={styles.transactionsSection}>
           <Text style={styles.sectionTitle}>Transactions récentes</Text>
 
@@ -102,6 +133,44 @@ export default function HomeScreen() {
 
         </View>
       </View>
+      {/* Basic Modal */}
+      <BottomModal
+        visible={basicModalVisible}
+        onClose={() => setBasicModalVisible(false)}
+        title="Ajouter un enfant"
+        subtitle="Ajouter votre enfant"
+        height={SCREEN_HEIGHT * 0.5}
+        enableDragToExpand={true}
+        onExpand={handleExpand}
+        onCollapse={handleCollapse}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalText}>
+            This is the content of the modal. You can put any components here.
+          </Text>
+          <CustomInput
+            id='test-input'
+            label='test'
+
+            disabled={false}
+          />
+
+          <View style={styles.modalActions}>
+            <GhostIconButton
+              iconName="heart-outline"
+              onPress={() => Alert.alert('Liked!')}
+            />
+            <GhostIconButton
+              iconName="share-outline"
+              onPress={() => Alert.alert('Shared!')}
+            />
+            <GhostIconButton
+              iconName="bookmark-outline"
+              onPress={() => Alert.alert('Bookmarked!')}
+            />
+          </View>
+        </View>
+      </BottomModal>
     </ScreenView>
   );
 }
@@ -198,5 +267,19 @@ const styles = StyleSheet.create({
   transactionsNotFoundText: {
     ...getTextStyle('xs', 'bold', colors.primary.main),
     textAlign: 'center',
-  }
+  },
+  modalContent: {
+    flex: 1,
+    paddingTop: spacingY._20,
+  },
+  modalText: {
+    ...getTextStyle('base', 'normal', colors.text.primary),
+    textAlign: 'center',
+    marginBottom: spacingY._25,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: spacingY._20,
+  },
 });
