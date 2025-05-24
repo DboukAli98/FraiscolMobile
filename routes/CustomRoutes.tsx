@@ -2,6 +2,7 @@ import { colors } from '@/constants/theme';
 import { CustomTabBarProps } from '@/types';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -66,7 +67,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     paddingTop: 8,
-    // paddingBottom: Platform.OS === 'ios' ? 30 : 12,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 12,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.background.paper,
   },

@@ -1,24 +1,40 @@
 // app/(tabs)/index.tsx
-// This is your home screen inside the tabs
-import { colors, radius, shapes, spacingY } from '@/constants/theme';
+import { ScreenView } from '@/components/ScreenView/ScreenView';
+import { colors, radius, spacingY } from '@/constants/theme';
 import { push } from 'expo-router/build/global-state/routing';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
 export default function HomeScreen() {
   return (
-    <View style={styles.container}>
-      <Text>Home Screen</Text>
-      <Pressable style={{backgroundColor:colors.primary.main , borderRadius:radius._10 , justifyContent:"center" , alignItems:"center" , height: spacingY._40 , width:"100%"}} onPress={() => push("/merchandises")}>
-        <Text style={{color:colors.text.white}}>Go to merchandise</Text>
+    <ScreenView safeArea={true}>
+      
+
+      <Text>Home</Text>
+      
+      <Pressable 
+        style={styles.merchandiseButton} 
+        onPress={() => push("/merchandises")}
+      >
+        <Text style={styles.buttonText}>Go to merchandise</Text>
       </Pressable>
-    </View>
+    </ScreenView>
   );
 }
 
- const styles = StyleSheet.create({
-  container :{
-    flex:1,
-    backgroundColor:"#fff",
-    padding:shapes.initialPadding
-  }
- }) 
+const styles = StyleSheet.create({
+  spacer: {
+    height: 20,
+  },
+  merchandiseButton: {
+    marginBottom: 12,
+    backgroundColor: colors.primary.main,
+    borderRadius: radius._10,
+    justifyContent: "center",
+    alignItems: "center",
+    height: spacingY._40,
+    width: "100%",
+  },
+  buttonText: {
+    color: colors.text.white,
+  },
+});
