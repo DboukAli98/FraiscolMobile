@@ -1,5 +1,6 @@
 // app/(tabs)/index.tsx
 import { BottomModal } from '@/components/BottomModal/BottomModal';
+import { CustomButton } from '@/components/Button/CustomPressable';
 import { Card, CardBody, CardHeader } from '@/components/Card/CardComponent';
 import { CustomInput } from '@/components/CustomInput/CustomInput';
 import { GhostIconButton } from '@/components/IconButton/IconButton';
@@ -13,14 +14,18 @@ import {
   spacingY
 } from '@/constants/theme';
 import { QuickActionData, QuickActionItem } from '@/GeneralData/GeneralData';
+import { useNotifications } from '@/hooks/useNotifications';
 import useUserInfo from '@/hooks/useUserInfo';
 import { SCREEN_HEIGHT } from '@/utils/stylings';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 export default function HomeScreen() {
   const userInfo = useUserInfo();
+
+  const { hasRequestedPermission, requestNotificationPermission } = useNotifications(); // Add this
+
 
   //#region States
 
@@ -47,6 +52,20 @@ export default function HomeScreen() {
 
   };
 
+
+  //#endregion
+
+  //#region Use Effects
+  useEffect(() => {
+    if (!hasRequestedPermission) {
+
+      const timer = setTimeout(() => {
+        requestNotificationPermission();
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [hasRequestedPermission, requestNotificationPermission]);
 
   //#endregion
 
@@ -77,7 +96,10 @@ export default function HomeScreen() {
         <Card borderRadius={"_10"} style={styles.cardContainer}>
           <CardHeader titleStyle={styles.cardHeaderTitleStyle} title='Total à payer ce mois-ci' />
 
-
+          <CardBody style={styles.mainCardBody}>
+            <Text style={styles.mainCardAmountText}>0</Text>
+            <Text style={styles.mainCardCurrencyText}>CFA</Text>
+          </CardBody>
 
         </Card>
 
@@ -101,10 +123,9 @@ export default function HomeScreen() {
         </View>
 
         <View>
-          <IconLabelCard
-            iconName="document-outline"
-            label="Basic Modal"
-            size="md"
+          <CustomButton
+            id='test-btn'
+            title='Ajouter un enfant'
             onPress={() => setBasicModalVisible(true)}
           />
         </View>
@@ -216,6 +237,20 @@ const styles = StyleSheet.create({
     ...getTextStyle('md', 'bold', colors.text.secondary),
     textAlign: "center"
 
+  },
+  mainCardBody: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+
+  },
+  mainCardAmountText: {
+    ...getTextStyle('3xl', 'bold', colors.text.secondary),
+    textAlign: "center"
+  },
+  mainCardCurrencyText: {
+    ...getTextStyle('xl', 'bold', colors.text.secondary),
+    textAlign: "center"
   },
   quickActionsSection: {
 

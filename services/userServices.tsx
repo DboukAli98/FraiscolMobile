@@ -12,6 +12,14 @@ interface LoginParams {
   loginByType?: string;
 }
 
+interface RegisterDeviceParams {
+  UserId: string;
+  Role: string;
+  DevicePushToken: string | null;
+
+}
+
+
 // Types for API responses
 interface ApiResponse<T = any> {
   success: boolean;
@@ -33,11 +41,15 @@ interface LoginResponse {
   };
 }
 
+interface RegisterDeviceResponse {
+  message: string;
+}
+
 export const useLogin = () => {
   const api = useApiInstance({
-    headers: { 
-      "Content-Type": "application/json", 
-      "Accept-Language": "en" 
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
     },
   });
 
@@ -57,7 +69,7 @@ export const useLogin = () => {
         loginByType,
       };
 
-      console.log("usrl :: " , process.env.EXPO_PUBLIC_API_BASE_URL);
+      console.log("usrl :: ", process.env.EXPO_PUBLIC_API_BASE_URL);
 
       try {
         const response = await api.post<LoginResponse>(
@@ -74,9 +86,9 @@ export const useLogin = () => {
       } catch (error: any) {
         const status = error.response ? error.response.status : 0;
         const errorData = error.response ? error.response.data : null;
-        
+
         console.error("Login error:", error);
-        
+
         return {
           success: false,
           status: status,
@@ -93,9 +105,9 @@ export const useLogin = () => {
 
 export const useLogout = () => {
   const api = useApiInstance({
-    headers: { 
-      "Content-Type": "application/json", 
-      "Accept-Language": "en" 
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
     },
   });
 
@@ -103,7 +115,7 @@ export const useLogout = () => {
     try {
       const response = await api.post("/api/Authentication/Logout");
 
-  
+
       // Navigate to login screen
       router.replace("/login");
 
@@ -116,7 +128,7 @@ export const useLogout = () => {
     } catch (error: any) {
       const status = error.response ? error.response.status : 0;
       const errorData = error.response ? error.response.data : null;
-      
+
       return {
         success: false,
         status: status,
@@ -127,4 +139,60 @@ export const useLogout = () => {
   }, [api]);
 
   return logoutUser;
+};
+
+export const useRegisterUserDeviceToNotification = () => {
+  const api = useApiInstance({
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
+    },
+  });
+
+  const registerUserDeviceToNotification = useCallback(
+    async ({
+      UserId = "",
+      Role = "",
+      DevicePushToken = "",
+
+    }: RegisterDeviceParams): Promise<ApiResponse<RegisterDeviceResponse>> => {
+      const requestData = {
+        UserId,
+        Role,
+        DevicePushToken,
+
+      };
+
+      console.log("usrl :: ", process.env.EXPO_PUBLIC_API_BASE_URL);
+
+      try {
+        const response = await api.post<RegisterDeviceResponse>(
+          "/api/Authentication/RegisterDevicePushToken",
+          requestData
+        );
+
+        return {
+          success: true,
+          status: response.status,
+          data: response.data,
+          error: null,
+        };
+      } catch (error: any) {
+        const status = error.response ? error.response.status : 0;
+        const errorData = error.response ? error.response.data : null;
+
+        console.error("Login error:", error);
+
+        return {
+          success: false,
+          status: status,
+          data: null,
+          error: errorData || "An error occurred during login",
+        };
+      }
+    },
+    [api]
+  );
+
+  return registerUserDeviceToNotification;
 };

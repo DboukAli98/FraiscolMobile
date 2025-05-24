@@ -8,28 +8,29 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 
-  // Prevent the splash screen from auto-hiding
-  SplashScreen.preventAutoHideAsync();
+// Prevent the splash screen from auto-hiding
+SplashScreen.preventAutoHideAsync();
 
-  export default function RootLayout() {
-    useEffect(() => {
-      // One Signal Enabling verbose logging for debugging 
-      OneSignal.Debug.setLogLevel(LogLevel.Verbose);
-      // Initializing with OneSignal App ID
-      OneSignal.initialize(process.env.EXPO_ONE_SIGNAL_APP_ID || "");
-      //This method to prompt for push notifications. Removing in production and use in app messaging
-      OneSignal.Notifications.requestPermission(true);
-      // Hide the splash screen after a short delay or when your app is ready
-      const hideSplash = async () => {
-        await SplashScreen.hideAsync();
-      };
-      
-      hideSplash();
-    }, []);
+export default function RootLayout() {
+  useEffect(() => {
+    // One Signal Enabling verbose logging for debugging 
+    OneSignal.Debug.setLogLevel(LogLevel.Verbose);
+    // Initializing with OneSignal App ID
+    console.log("OneSignal App ID:", process.env.EXPO_ONE_SIGNAL_APP_ID);
+    OneSignal.initialize("7a7bb505-d9c7-4366-9e85-7051fbfd2b90");
+    // //This method to prompt for push notifications. Removing in production and use in app messaging
+    // OneSignal.Notifications.requestPermission(true);
+    // Hide the splash screen after a short delay or when your app is ready
+    const hideSplash = async () => {
+      await SplashScreen.hideAsync();
+    };
 
-    return (
-      <Provider store={store}>
-        <PersistGate 
+    hideSplash();
+  }, []);
+
+  return (
+    <Provider store={store}>
+      <PersistGate
         loading={
           <SafeAreaProvider>
             <SafeAreaView style={styles.container}>
@@ -38,26 +39,26 @@ import { PersistGate } from 'redux-persist/integration/react';
               </View>
             </SafeAreaView>
           </SafeAreaProvider>
-        } 
+        }
         persistor={persistor}
       >
-      <SafeAreaProvider>
-         <SafeAreaView style={styles.container}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(auth)" />
-     
+        <SafeAreaProvider>
+          <SafeAreaView style={styles.container}>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="(auth)" />
 
-        
-      </Stack>
-      </SafeAreaView>
-      </SafeAreaProvider>
+
+
+            </Stack>
+          </SafeAreaView>
+        </SafeAreaProvider>
       </PersistGate>
-      </Provider>
-    );
-  }
+    </Provider>
+  );
+}
 
- const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff"
@@ -71,4 +72,4 @@ import { PersistGate } from 'redux-persist/integration/react';
     fontSize: 16,
     color: '#666',
   },
- }) 
+}) 
