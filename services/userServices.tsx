@@ -3,7 +3,6 @@ import { useCallback } from "react";
 import useApiInstance from "./apiClient";
 
 
-// Types for login parameters
 interface LoginParams {
   countryCode: string;
   mobileNumber: string;
@@ -20,7 +19,6 @@ interface RegisterDeviceParams {
 }
 
 
-// Types for API responses
 interface ApiResponse<T = any> {
   success: boolean;
   status: number;
@@ -31,19 +29,50 @@ interface ApiResponse<T = any> {
 interface LoginResponse {
   token: string;
   userId: string;
-  // Add other fields that your API returns
   refreshToken?: string;
   expiresIn?: number;
   userInfo?: {
     name: string;
     email: string;
-    // Add other user fields
+
   };
 }
 
 interface RegisterDeviceResponse {
   message: string;
 }
+
+interface GetParentChildrensParams {
+  parentId: number;
+  pageNumber?: number;
+  pageSize?: number;
+  search?: string;
+}
+
+interface Children {
+  childId: number;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  schoolName: string;
+  schoolGradeName: string;
+  fK_ParentId: number;
+  fK_SchoolId: number;
+  fK_StatusId: number;
+  createdOn: string;
+  modifiedOn: string | null;
+}
+
+interface GetParentChildrensResponse {
+  data: Children[] | null;
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  status: string;
+  error: any | null;
+  message: string | null;
+}
+
 
 export const useLogin = () => {
   const api = useApiInstance({
@@ -195,4 +224,57 @@ export const useRegisterUserDeviceToNotification = () => {
   );
 
   return registerUserDeviceToNotification;
+};
+
+export const useGetParentChildrens = () => {
+  const api = useApiInstance({
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
+    },
+  });
+
+  const getParentChildrens = useCallback(
+    async ({
+      parentId,
+      pageNumber = 1,
+      pageSize = 10,
+      search = "",
+    }: GetParentChildrensParams): Promise<ApiResponse<GetParentChildrensResponse>> => {
+      const params = new URLSearchParams({
+        ParentId: parentId.toString(),
+        PageNumber: pageNumber.toString(),
+        PageSize: pageSize.toString(),
+        Search: search,
+      }).toString();
+
+      try {
+        const response = await api.get<GetParentChildrensResponse>(
+          `/api/Parents/GetParentChildrens?${params}`
+        );
+
+        return {
+          success: true,
+          status: response.status,
+          data: response.data,
+          error: null,
+        };
+      } catch (error: any) {
+        const status = error.response ? error.response.status : 0;
+        const errorData = error.response ? error.response.data : null;
+
+        console.error("Get parent childrens error:", error);
+
+        return {
+          success: false,
+          status: status,
+          data: null,
+          error: errorData || "An error occurred while fetching parent childrens",
+        };
+      }
+    },
+    [api]
+  );
+
+  return getParentChildrens;
 };

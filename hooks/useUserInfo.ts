@@ -23,6 +23,7 @@ interface UserInfo {
   name: string | null;
   email: string | null;
   schoolId: string | null;
+  parentId?: string | null;
 }
 
 /**
@@ -55,6 +56,7 @@ const useUserInfo = (): UserInfo | null => {
       name: decoded["Name"] || null,
       email: decoded["Email"] || null,
       schoolId: decoded["School"] || null,
+      parentId: decoded["EntityUserId"] || null,
     };
   } catch (error) {
     console.error("Failed to decode token:", error);

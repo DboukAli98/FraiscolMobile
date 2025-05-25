@@ -1,6 +1,5 @@
 // app/(tabs)/index.tsx
 import { BottomModal } from '@/components/BottomModal/BottomModal';
-import { CustomButton } from '@/components/Button/CustomPressable';
 import { Card, CardBody, CardHeader } from '@/components/Card/CardComponent';
 import { CustomInput } from '@/components/CustomInput/CustomInput';
 import { GhostIconButton } from '@/components/IconButton/IconButton';
@@ -16,15 +15,18 @@ import {
 import { QuickActionData, QuickActionItem } from '@/GeneralData/GeneralData';
 import { useNotifications } from '@/hooks/useNotifications';
 import useUserInfo from '@/hooks/useUserInfo';
+import { useLogout } from '@/services/userServices';
 import { SCREEN_HEIGHT } from '@/utils/stylings';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function HomeScreen() {
   const userInfo = useUserInfo();
 
   const { hasRequestedPermission, requestNotificationPermission } = useNotifications(); // Add this
+
+  const logoutUser = useLogout();
 
 
   //#region States
@@ -40,6 +42,20 @@ export default function HomeScreen() {
   const handleQuickAction = (action: QuickActionItem) => {
     router.push(action.route as any);
   };
+
+  const handleLogout = async () => {
+    try {
+      const { success, error } = await logoutUser();
+      if (success) {
+        router.replace("/(auth)/login");
+      }
+      else {
+        Alert.alert("Erreur", error || "Une erreur s'est produite lors de la déconnexion.");
+      }
+    } catch (error) {
+      Alert.alert("Erreur Une erreur s'est produite lors de la déconnexion.");
+    }
+  }
 
 
   const handleExpand = () => {
@@ -122,13 +138,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View>
-          <CustomButton
-            id='test-btn'
-            title='Ajouter un enfant'
-            onPress={() => setBasicModalVisible(true)}
-          />
-        </View>
+
         <View style={styles.transactionsSection}>
           <Text style={styles.sectionTitle}>Transactions récentes</Text>
 
@@ -145,12 +155,12 @@ export default function HomeScreen() {
 
 
         <View style={styles.actionSection}>
-          {/* <Pressable
-            style={[styles.merchandiseButton, shadows.md]}
-            onPress={() => push("/merchandises")}
+          <Pressable
+            style={styles.merchandiseButton}
+            onPress={handleLogout}
           >
             <Text style={styles.buttonText}>Go to Merchandise</Text>
-          </Pressable> */}
+          </Pressable>
 
         </View>
       </View>
