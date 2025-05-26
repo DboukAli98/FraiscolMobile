@@ -47,6 +47,7 @@ const useApiInstance = ({
         return config;
       },
       (error) => {
+        console.error("Request interceptor error:", error);
         return Promise.reject(error);
       }
     );
@@ -66,11 +67,12 @@ const useApiInstance = ({
         ) {
           // Clear credentials from Redux store (this will trigger redux-persist to clear AsyncStorage)
           dispatch(clearCredentials());
-          
+
           // Navigate to login screen using Expo Router
           router.replace("/(auth)/login");
 
         }
+        console.error("Response interceptor error:", error);
         return Promise.reject(error);
       }
     );
@@ -89,7 +91,7 @@ const useApiInstance = ({
       // Eject interceptors on unmount to avoid memory leaks
       const requestId = (apiInstance as any)._requestInterceptorId;
       const responseId = (apiInstance as any)._responseInterceptorId;
-      
+
       if (requestId !== undefined) {
         apiInstance.interceptors.request.eject(requestId);
       }

@@ -1,6 +1,6 @@
 // app/(pages)/childrens.tsx
-import { ChildItem } from '@/components/ChildItem/ChildItem';
 import { InfiniteList } from '@/components/InfiniteList/InfiniteList';
+import { ChildItem } from '@/components/ListItems/ChildItem';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { colors, spacingY } from '@/constants/theme';

@@ -1,8 +1,10 @@
 import { router } from "expo-router";
 import { useCallback } from "react";
 import useApiInstance from "./apiClient";
+import { School } from "./childrenServices";
 
 
+//#region Types
 interface LoginParams {
   countryCode: string;
   mobileNumber: string;
@@ -49,6 +51,14 @@ interface GetParentChildrensParams {
   search?: string;
 }
 
+interface GetParentSchoolsParams {
+  parentId: number;
+  pageNumber?: number;
+  pageSize?: number;
+  search?: string;
+}
+
+
 interface Children {
   childId: number;
   firstName: string;
@@ -72,6 +82,21 @@ interface GetParentChildrensResponse {
   error: any | null;
   message: string | null;
 }
+
+interface GetParentSchoolsResponse {
+  data: School[] | null;
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  status: string;
+  error: any | null;
+  message: string | null;
+}
+
+
+
+
+//#endregion
 
 
 export const useLogin = () => {
@@ -278,3 +303,58 @@ export const useGetParentChildrens = () => {
 
   return getParentChildrens;
 };
+
+
+export const useGetParentSchools = () => {
+  const api = useApiInstance({
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
+    },
+  });
+
+  const getParentSchools = useCallback(
+    async ({
+      parentId,
+      pageNumber = 1,
+      pageSize = 10,
+      search = "",
+    }: GetParentSchoolsParams): Promise<ApiResponse<GetParentSchoolsResponse>> => {
+      const params = new URLSearchParams({
+        ParentId: parentId.toString(),
+        PageNumber: pageNumber.toString(),
+        PageSize: pageSize.toString(),
+        Search: search,
+      }).toString();
+
+      try {
+        const response = await api.get<GetParentSchoolsResponse>(
+          `/api/Parents/GetParentSchools?${params}`
+        );
+
+        return {
+          success: true,
+          status: response.status,
+          data: response.data,
+          error: null,
+        };
+      } catch (error: any) {
+        const status = error.response ? error.response.status : 0;
+        const errorData = error.response ? error.response.data : null;
+
+        console.error("Get parent childrens error:", error);
+
+        return {
+          success: false,
+          status: status,
+          data: null,
+          error: errorData || "An error occurred while fetching parent childrens",
+        };
+      }
+    },
+    [api]
+  );
+
+  return getParentSchools;
+};
+

@@ -1,0 +1,246 @@
+import { useCallback } from "react";
+import useApiInstance from "./apiClient";
+import { School } from "./childrenServices";
+
+
+//#region  types
+
+interface ApiResponse<T = any> {
+    success: boolean;
+    status: number;
+    data: T | null;
+    error: any;
+}
+interface GetChildrenGradeParams {
+    childrenId: number;
+}
+
+interface ChildGrade {
+    childGradeId: number;
+    fK_ChildId: number;
+    fK_SchoolGradeSectionId: number;
+    fK_StatusId: number;
+    createdOn: string;
+    modifiedOn: string | null;
+    schoolGradeSection: {
+        schoolGradeSectionId: number;
+        fK_SchoolId: number;
+        schoolGradeName: string;
+        schoolGradeDescription: string;
+        schoolGradeFee: number;
+        termStartDate: string;
+        termEndDate: string;
+        fK_StatusId: number;
+        createdOn: string;
+        modifiedOn: string | null;
+        school: School;
+    };
+}
+
+interface GetChildrenGradeResponse {
+    data: ChildGrade;
+    status: string;
+    error: any | null;
+    message: string | null;
+}
+
+// Payment Cycle interfaces
+interface GetPaymentCyclesParams {
+    schoolGradeSectionId: number;
+    pageNumber?: number;
+    pageSize?: number;
+    search?: string;
+}
+
+interface PaymentCycle {
+    paymentCycleId: number;
+    paymentCycleName: string;
+    paymentCycleDescription: string;
+    fK_SchoolGradeSectionId: number;
+    paymentCycleType: number;
+    intervalCount: number | null;
+    intervalUnit: number | null;
+    installmentAmounts: string | null;
+    planStartDate: string;
+    createdOn: string;
+    modifiedOn: string | null;
+}
+
+interface GetPaymentCyclesResponse {
+    data: PaymentCycle[] | null;
+    pageNumber: number;
+    pageSize: number;
+    totalCount: number;
+    status: string;
+    error: any | null;
+    message: string | null;
+}
+
+// Child Cycle Selection interfaces
+interface SelectChildCycleSelectionParams {
+    childGradeId: number;
+    paymentCycleId: number;
+}
+
+interface SelectChildCycleSelectionResponse {
+    status: string;
+    error: any | null;
+    message: string | null;
+}
+
+//#endregion
+
+
+export const useGetChildrenGrade = () => {
+    const api = useApiInstance({
+        headers: {
+            "Content-Type": "application/json",
+            "Accept-Language": "en"
+        },
+    });
+
+    const getChildrenGrade = useCallback(
+        async ({
+            childrenId
+        }: GetChildrenGradeParams): Promise<ApiResponse<GetChildrenGradeResponse>> => {
+            const params = new URLSearchParams({
+                ChildrenId: childrenId.toString(),
+            }).toString();
+
+            try {
+                const response = await api.get<GetChildrenGradeResponse>(
+                    `/api/Children/GetChildrenGrade?${params}`
+                );
+
+                return {
+                    success: true,
+                    status: response.status,
+                    data: response.data,
+                    error: null,
+                };
+            } catch (error: any) {
+                const status = error.response ? error.response.status : 0;
+                const errorData = error.response ? error.response.data : null;
+
+                console.error("Get children grade error:", error.response);
+
+                return {
+                    success: false,
+                    status: status,
+                    data: null,
+                    error: errorData || "An error occurred while fetching children grade",
+                };
+            }
+        },
+        [api]
+    );
+
+    return getChildrenGrade;
+};
+
+// Payment Cycles Service
+export const useGetPaymentCycles = () => {
+    const api = useApiInstance({
+        headers: {
+            "Content-Type": "application/json",
+            "Accept-Language": "en"
+        },
+    });
+
+    const getPaymentCycles = useCallback(
+        async ({
+            schoolGradeSectionId,
+            pageNumber = 1,
+            pageSize = 10,
+            search = "",
+        }: GetPaymentCyclesParams): Promise<ApiResponse<GetPaymentCyclesResponse>> => {
+            const params = new URLSearchParams({
+                SchoolGradeSectionId: schoolGradeSectionId.toString(),
+                PageNumber: pageNumber.toString(),
+                PageSize: pageSize.toString(),
+                Search: search,
+            }).toString();
+
+            try {
+                const response = await api.get<GetPaymentCyclesResponse>(
+                    `/api/School/GetPaymentCycles?${params}`
+                );
+
+                return {
+                    success: true,
+                    status: response.status,
+                    data: response.data,
+                    error: null,
+                };
+            } catch (error: any) {
+                const status = error.response ? error.response.status : 0;
+                const errorData = error.response ? error.response.data : null;
+
+                console.error("Get payment cycles error:", error);
+
+                return {
+                    success: false,
+                    status: status,
+                    data: null,
+                    error: errorData || "An error occurred while fetching payment cycles",
+                };
+            }
+        },
+        [api]
+    );
+
+    return getPaymentCycles;
+};
+
+// Child Cycle Selection Service
+export const useSelectChildCycleSelection = () => {
+    const api = useApiInstance({
+        headers: {
+            "Content-Type": "application/json",
+            "Accept-Language": "en"
+        },
+    });
+
+    const selectChildCycleSelection = useCallback(
+        async ({
+            childGradeId,
+            paymentCycleId,
+        }: SelectChildCycleSelectionParams): Promise<ApiResponse<SelectChildCycleSelectionResponse>> => {
+            const requestData = {
+                childGradeId,
+                paymentCycleId,
+            };
+
+            try {
+                const response = await api.post<SelectChildCycleSelectionResponse>(
+                    "/api/School/SelectChildCycleSelection",
+                    requestData
+                );
+
+                return {
+                    success: true,
+                    status: response.status,
+                    data: response.data,
+                    error: null,
+                };
+            } catch (error: any) {
+                const status = error.response ? error.response.status : 0;
+                const errorData = error.response ? error.response.data : null;
+
+                console.error("Select child cycle selection error:", error);
+
+                return {
+                    success: false,
+                    status: status,
+                    data: null,
+                    error: errorData || "An error occurred while selecting child cycle",
+                };
+            }
+        },
+        [api]
+    );
+
+    return selectChildCycleSelection;
+};
+
+
