@@ -15,7 +15,12 @@ interface GetChildrenGradeParams {
     childrenId: number;
 }
 
-interface ChildGrade {
+interface GetChildrenGradeSelectionParams {
+    childGradeId: number;
+}
+
+
+export interface ChildGrade {
     childGradeId: number;
     fK_ChildId: number;
     fK_SchoolGradeSectionId: number;
@@ -36,6 +41,12 @@ interface ChildGrade {
         school: School;
     };
 }
+export interface ChildGradeSelection {
+    childCycleSelectionId: number;
+    fK_ChildGradeId: number;
+    fK_PaymentCycleId: number;
+    totalFee: string;
+}
 
 interface GetChildrenGradeResponse {
     data: ChildGrade;
@@ -43,6 +54,15 @@ interface GetChildrenGradeResponse {
     error: any | null;
     message: string | null;
 }
+
+interface GetChildrenGradeSelectionResponse {
+    data: ChildGradeSelection;
+    status: string;
+    error: any | null;
+    message: string | null;
+}
+
+
 
 // Payment Cycle interfaces
 interface GetPaymentCyclesParams {
@@ -52,7 +72,7 @@ interface GetPaymentCyclesParams {
     search?: string;
 }
 
-interface PaymentCycle {
+export interface PaymentCycle {
     paymentCycleId: number;
     paymentCycleName: string;
     paymentCycleDescription: string;
@@ -88,6 +108,33 @@ interface SelectChildCycleSelectionResponse {
     message: string | null;
 }
 
+
+export interface AddChildrenToSystemParams {
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string; // Format: YYYY-MM-DD
+    fatherName?: string;
+    parentId: number;
+    schoolId: number;
+}
+
+interface AddChildrenToSystemResponse {
+    status: string;
+    error: any | null;
+    message: string | null;
+}
+
+interface AddChildGradeParams {
+    childId: number;
+    schoolGradeSectionId: number;
+    statusId?: number;
+}
+
+interface AddChildGradeResponse {
+    status: string;
+    error: any | null;
+    message: string | null;
+}
 //#endregion
 
 
@@ -137,6 +184,54 @@ export const useGetChildrenGrade = () => {
 
     return getChildrenGrade;
 };
+
+export const useGetChildrenGradeSelection = () => {
+    const api = useApiInstance({
+        headers: {
+            "Content-Type": "application/json",
+            "Accept-Language": "en"
+        },
+    });
+
+    const getChildrenGradeSelection = useCallback(
+        async ({
+            childGradeId
+        }: GetChildrenGradeSelectionParams): Promise<ApiResponse<GetChildrenGradeSelectionResponse>> => {
+            const params = new URLSearchParams({
+                ChildGradeId: childGradeId.toString(),
+            }).toString();
+
+            try {
+                const response = await api.get<GetChildrenGradeSelectionResponse>(
+                    `/api/School/GetChildCycleSelection?${params}`
+                );
+
+                return {
+                    success: true,
+                    status: response.status,
+                    data: response.data,
+                    error: null,
+                };
+            } catch (error: any) {
+                const status = error.response ? error.response.status : 0;
+                const errorData = error.response ? error.response.data : null;
+
+                console.error("Get children grade error:", error.response);
+
+                return {
+                    success: false,
+                    status: status,
+                    data: null,
+                    error: errorData || "An error occurred while fetching children grade",
+                };
+            }
+        },
+        [api]
+    );
+
+    return getChildrenGradeSelection;
+};
+
 
 // Payment Cycles Service
 export const useGetPaymentCycles = () => {
@@ -244,3 +339,117 @@ export const useSelectChildCycleSelection = () => {
 };
 
 
+export const useAddChildrenToSystem = () => {
+    const api = useApiInstance({
+        headers: {
+            "Content-Type": "application/json",
+            "Accept-Language": "en"
+        },
+    });
+
+    const addChildrenToSystem = useCallback(
+        async ({
+            firstName,
+            lastName,
+            dateOfBirth,
+            fatherName,
+            parentId,
+            schoolId,
+        }: AddChildrenToSystemParams): Promise<ApiResponse<AddChildrenToSystemResponse>> => {
+            const requestData = {
+                firstName,
+                lastName,
+                dateOfBirth,
+                fatherName: fatherName || null,
+                parentId,
+                schoolId,
+            };
+
+            try {
+                console.log('Adding child to system:', requestData);
+
+                const response = await api.post<AddChildrenToSystemResponse>(
+                    "/api/Children/AddChildren",
+                    requestData
+                );
+
+                return {
+                    success: true,
+                    status: response.status,
+                    data: response.data,
+                    error: null,
+                };
+            } catch (error: any) {
+                const status = error.response ? error.response.status : 0;
+                const errorData = error.response ? error.response.data : null;
+
+                console.error("Add children error:", error);
+
+                return {
+                    success: false,
+                    status: status,
+                    data: null,
+                    error: errorData || "An error occurred while adding child",
+                };
+            }
+        },
+        [api]
+    );
+
+    return addChildrenToSystem;
+};
+
+
+export const useAddChildGrade = () => {
+    const api = useApiInstance({
+        headers: {
+            "Content-Type": "application/json",
+            "Accept-Language": "en"
+        },
+    });
+
+    const addChildGrade = useCallback(
+        async ({
+            childId,
+            schoolGradeSectionId,
+            statusId = 1, // Default to active
+        }: AddChildGradeParams): Promise<ApiResponse<AddChildGradeResponse>> => {
+            const requestData = {
+                childId,
+                schoolGradeSectionId,
+                statusId,
+            };
+
+            try {
+                console.log('Adding child to grade section:', requestData);
+
+                const response = await api.post<AddChildGradeResponse>(
+                    "/api/School/AddChildGrade", // Based on your .NET endpoint
+                    requestData
+                );
+
+                return {
+                    success: true,
+                    status: response.status,
+                    data: response.data,
+                    error: null,
+                };
+            } catch (error: any) {
+                const status = error.response ? error.response.status : 0;
+                const errorData = error.response ? error.response.data : null;
+
+                console.error("Add child grade error:", error);
+
+                return {
+                    success: false,
+                    status: status,
+                    data: null,
+                    error: errorData || "An error occurred while adding child to grade",
+                };
+            }
+        },
+        [api]
+    );
+
+    return addChildGrade;
+};

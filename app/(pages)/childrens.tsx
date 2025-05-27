@@ -1,13 +1,18 @@
 // app/(pages)/childrens.tsx
+import { AddChildData, AddChildModal } from '@/components/ActionModals/AddChildModal';
 import { InfiniteList } from '@/components/InfiniteList/InfiniteList';
 import { ChildItem } from '@/components/ListItems/ChildItem';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { colors, spacingY } from '@/constants/theme';
 import { useChildrenData } from '@/hooks/useChildrenData';
+import useUserInfo from '@/hooks/useUserInfo';
+import { useAddChildrenToSystem } from '@/services/childGradeServices';
+import { School } from '@/services/childrenServices';
+import { useGetParentSchools } from '@/services/userServices';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Alert,
     ListRenderItem,
@@ -36,6 +41,12 @@ interface ChildrenListItem extends Children {
 
 const ChildrensScreen = () => {
 
+    const userInfo = useUserInfo();
+
+
+    const addChildrenToSystem = useAddChildrenToSystem();
+    const getParentSchools = useGetParentSchools();
+
     const {
         children,
         isLoading,
@@ -53,6 +64,13 @@ const ChildrensScreen = () => {
         pageSize: 15,
         initialSearch: '',
     });
+
+    //#region States
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [schools, setSchools] = useState<School[]>([]);
+    const [isLoadingSchools, setIsLoadingSchools] = useState(false);
+    const [isAddingChild, setIsAddingChild] = useState(false);
+    //#endregion
 
 
     const listData: ChildrenListItem[] = children.map(child => ({
@@ -122,6 +140,35 @@ const ChildrensScreen = () => {
         );
     }, []);
 
+    const fetchSchools = useCallback(async () => {
+        if (!userInfo?.parentId) {
+            console.error('Parent ID not found');
+            return;
+        }
+
+        try {
+            setIsLoadingSchools(true);
+
+            const { success, data, error: apiError } = await getParentSchools({
+                parentId: parseInt(userInfo.parentId),
+                pageNumber: 1,
+                pageSize: 100, // Get all schools
+            });
+
+            if (success && data) {
+                setSchools(data.data || []);
+            } else {
+                console.error('Failed to fetch schools:', apiError);
+                setSchools([]);
+            }
+        } catch (err: any) {
+            console.error('Error fetching schools:', err);
+            setSchools([]);
+        } finally {
+            setIsLoadingSchools(false);
+        }
+    }, [userInfo?.parentId, getParentSchools]);
+
 
     const keyExtractor = useCallback((item: ChildrenListItem) =>
         item.childId.toString(),
@@ -152,6 +199,63 @@ const ChildrensScreen = () => {
         router.back();
     }, []);
 
+    const handleAddChild = useCallback(() => {
+        setShowAddModal(true);
+    }, []);
+
+    const handleCloseAddModal = useCallback(() => {
+        setShowAddModal(false);
+    }, []);
+
+    const handleAddChildSubmit = useCallback(async (childData: AddChildData) => {
+        try {
+            setIsAddingChild(true);
+
+            const { success, data, error: apiError } = await addChildrenToSystem({
+                firstName: childData.firstName,
+                lastName: childData.lastName,
+                dateOfBirth: childData.dateOfBirth,
+                fatherName: childData.fatherName,
+                parentId: childData.parentId,
+                schoolId: childData.schoolId,
+            });
+
+            if (success) {
+                Alert.alert(
+                    'Succès',
+                    'L\'enfant a été ajouté avec succès au système.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => {
+                                // Refresh the children list
+                                refresh();
+                            }
+                        }
+                    ]
+                );
+            } else {
+                throw new Error(apiError || 'Échec de l\'ajout de l\'enfant');
+            }
+        } catch (err: any) {
+            const errorMessage = err.message || 'Une erreur est survenue lors de l\'ajout de l\'enfant';
+            Alert.alert('Erreur', errorMessage);
+            console.error('Error adding child:', err);
+            throw err; // Re-throw to prevent modal from closing
+        } finally {
+            setIsAddingChild(false);
+        }
+    }, [addChildrenToSystem, refresh]);
+
+
+    //#region Effects
+    useEffect(() => {
+        if (showAddModal && schools.length === 0) {
+            fetchSchools();
+        }
+    }, [showAddModal]);
+    //#endregion
+
     return (
         <ScreenView
             safeArea={true}
@@ -159,7 +263,13 @@ const ChildrensScreen = () => {
             paddingVertical={true}
             backgroundColor={colors.background.default}
         >
-            <PageHeader title="Liste d'enfants" onBack={handleBack} />
+            <PageHeader title="Liste d'enfants" onBack={handleBack} actions={[
+                {
+                    icon: 'person-add-outline',
+                    onPress: handleAddChild,
+                    color: colors.primary.main,
+                }
+            ]} />
             <InfiniteList<ChildrenListItem>
                 data={listData}
                 renderItem={renderChildItem}
@@ -185,6 +295,13 @@ const ChildrensScreen = () => {
                 windowSize={10}
                 maxToRenderPerBatch={10}
                 removeClippedSubviews={true}
+            />
+            <AddChildModal
+                visible={showAddModal}
+                onClose={handleCloseAddModal}
+                onAddChild={handleAddChildSubmit}
+                schools={schools}
+                isLoading={isLoadingSchools || isAddingChild}
             />
         </ScreenView>
     );

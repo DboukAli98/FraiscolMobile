@@ -1,11 +1,17 @@
+import { CustomButton } from '@/components/Button/CustomPressable';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
+import { PaymentCycleModal } from '@/components/PaymentCycleModal/PaymentCycleModal';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
+import { SectionSelectionModal } from '@/components/SelectionModals/SectionSelectionModal';
 import { colors, spacingX, spacingY } from '@/constants/theme';
+import { ChildGrade, ChildGradeSelection, PaymentCycle, useAddChildGrade, useGetChildrenGrade, useGetChildrenGradeSelection, useGetPaymentCycles, useSelectChildCycleSelection } from '@/services/childGradeServices';
 import { ChildDetailsData, useGetChildrenDetails } from '@/services/childrenServices';
+import { SchoolGradeSection, useGetSchoolGradesSections } from '@/services/schoolsServices';
+
 import { scale, scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -18,25 +24,41 @@ import {
 } from 'react-native';
 
 const ChildrenDetails = () => {
-
-
     //#region Params
     const { id } = useLocalSearchParams();
     //#endregion
 
     //#region Api services
     const getChildrenDetails = useGetChildrenDetails();
+    const getChildrenGrade = useGetChildrenGrade();
+    const getChildrenGradeSelection = useGetChildrenGradeSelection();
+    const getPaymentCycles = useGetPaymentCycles();
+    const selectChildCycleSelection = useSelectChildCycleSelection();
+    const getSchoolGradesSections = useGetSchoolGradesSections();
+    const addChildGrade = useAddChildGrade();
+
     //#endregion
 
     //#region States
-    const [childrenDetails, setChildrenDetails] = React.useState<ChildDetailsData>();
-    const [isLoading, setIsLoading] = React.useState(false);
-    const [isRefreshing, setIsRefreshing] = React.useState(false);
-    const [error, setError] = React.useState<string | null>(null);
+    const [childrenDetails, setChildrenDetails] = useState<ChildDetailsData>();
+    const [childrenGrade, setChildrenGrade] = useState<ChildGrade>();
+    const [childrenGradeSelection, setChildrenGradeSelection] = useState<ChildGradeSelection | null>(null);
+    const [paymentCycles, setPaymentCycles] = useState<PaymentCycle[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isLoadingCycles, setIsLoadingCycles] = useState(false);
+    const [isSelectingCycle, setIsSelectingCycle] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const [schoolSections, setSchoolSections] = useState<SchoolGradeSection[]>([]);
+    const [showSectionModal, setShowSectionModal] = useState(false);
+    const [isLoadingSections, setIsLoadingSections] = useState(false);
+    const [isAddingToSection, setIsAddingToSection] = useState(false);
     //#endregion
 
     //#region fetch data
-    const fetchChildrenDetails = React.useCallback(async (isRefresh: boolean = false) => {
+    const fetchChildrenDetails = useCallback(async (isRefresh: boolean = false) => {
         try {
             // Set appropriate loading state
             if (isRefresh) {
@@ -71,18 +93,146 @@ const ChildrenDetails = () => {
             setIsRefreshing(false);
         }
     }, [id]);
+
+    const fetchChildrenGrade = useCallback(async (isRefresh: boolean = false) => {
+        try {
+            // Set appropriate loading state
+            if (isRefresh) {
+                setIsRefreshing(true);
+            } else {
+                setIsLoading(true);
+            }
+
+            setError(null);
+
+            const childIdStr = Array.isArray(id) ? id[0] : id;
+            if (!childIdStr) {
+                throw new Error('Child ID not provided');
+            }
+
+            const { success, data, error: apiError } = await getChildrenGrade({
+                childrenId: parseInt(childIdStr)
+            });
+
+            if (success && data) {
+                setChildrenGrade(data.data);
+                console.log('Children Grade:', data.data);
+                if (data.data !== null) {
+                    // Fetch grade selection and payment cycles after getting grade
+                    await fetchChildrenGradeSelection(data.data.childGradeId, false);
+                    await fetchPaymentCycles(data.data.schoolGradeSection.schoolGradeSectionId);
+                }
+
+            } else {
+                console.log('No child grade found:', apiError);
+                setChildrenGrade(undefined);
+                setChildrenGradeSelection(null);
+                setPaymentCycles([]);
+            }
+
+        } catch (err: any) {
+            const errorMessage = err.message || 'An error occurred while fetching child grade';
+            setError(errorMessage);
+            console.error('Error fetching child grade:', err);
+            setChildrenGrade(undefined);
+            setChildrenGradeSelection(null);
+            setPaymentCycles([]);
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+        }
+    }, [id]);
+
+    const fetchChildrenGradeSelection = useCallback(async (childGradeId: number, isRefresh: boolean = false) => {
+        try {
+            // Set appropriate loading state
+            if (isRefresh) {
+                setIsRefreshing(true);
+            }
+
+            const { success, data, error: apiError } = await getChildrenGradeSelection({
+                childGradeId: childGradeId
+            });
+
+            if (success && data) {
+                setChildrenGradeSelection(data.data);
+                console.log('Children Grade Selection:', data.data);
+            } else {
+                console.log('No grade selection found:', apiError);
+                setChildrenGradeSelection(null);
+            }
+
+        } catch (err: any) {
+            console.error('Error fetching child grade selection:', err);
+            setChildrenGradeSelection(null);
+        } finally {
+            setIsRefreshing(false);
+        }
+    }, []);
+
+    const fetchPaymentCycles = useCallback(async (schoolGradeSectionId: number) => {
+        try {
+            setIsLoadingCycles(true);
+
+            const { success, data, error: apiError } = await getPaymentCycles({
+                schoolGradeSectionId,
+                pageNumber: 1,
+                pageSize: 100,
+            });
+
+            if (success && data) {
+                setPaymentCycles(data.data || []);
+                console.log('Payment Cycles:', data.data);
+            } else {
+                console.log('No payment cycles found:', apiError);
+                setPaymentCycles([]);
+            }
+
+        } catch (err: any) {
+            console.error('Error fetching payment cycles:', err);
+            setPaymentCycles([]);
+        } finally {
+            setIsLoadingCycles(false);
+        }
+    }, []);
+
+    const fetchSchoolSections = useCallback(async (schoolId: number) => {
+        try {
+            setIsLoadingSections(true);
+
+            const { success, data, error: apiError } = await getSchoolGradesSections({
+                schoolId,
+                pageNumber: 1,
+                pageSize: 100,
+                onlyEnabled: true,
+            });
+
+            if (success && data) {
+                setSchoolSections(data.data || []);
+            } else {
+                console.log('No sections found:', apiError);
+                setSchoolSections([]);
+            }
+        } catch (err: any) {
+            console.error('Error fetching sections:', err);
+            setSchoolSections([]);
+        } finally {
+            setIsLoadingSections(false);
+        }
+    }, [getSchoolGradesSections]);
     //#endregion
 
     //#region Effects
-    React.useEffect(() => {
+    useEffect(() => {
         if (id) {
             fetchChildrenDetails(false);
+            fetchChildrenGrade(false);
         }
-    }, [id, fetchChildrenDetails]);
+    }, [id, fetchChildrenDetails, fetchChildrenGrade]);
     //#endregion
 
     //#region Handlers
-    const formatDate = React.useCallback((dateString: string) => {
+    const formatDate = useCallback((dateString: string) => {
         try {
             const date = new Date(dateString);
             return date.toLocaleDateString('fr-FR', {
@@ -95,7 +245,58 @@ const ChildrenDetails = () => {
         }
     }, []);
 
-    const calculateAge = React.useCallback((dateString: string) => {
+    const handleSelectSection = useCallback(() => {
+        if (!childrenDetails?.school?.schoolId) {
+            Alert.alert('Erreur', 'Informations école non disponibles.');
+            return;
+        }
+
+        fetchSchoolSections(childrenDetails.school.schoolId);
+        setShowSectionModal(true);
+    }, [childrenDetails?.school?.schoolId, fetchSchoolSections]);
+
+    const handleSectionSelection = useCallback(async (selectedSection: SchoolGradeSection) => {
+        if (!childrenDetails?.childId) {
+            Alert.alert('Erreur', 'Informations enfant non disponibles.');
+            return;
+        }
+
+        try {
+            setIsAddingToSection(true);
+
+            const { success, data, error: apiError } = await addChildGrade({
+                childId: childrenDetails.childId,
+                schoolGradeSectionId: selectedSection.schoolGradeSectionId,
+                statusId: 1, // Active
+            });
+
+            if (success) {
+                Alert.alert(
+                    'Succès',
+                    'L\'enfant a été assigné à la section avec succès.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => {
+                                // Refresh the grade to show the new assignment
+                                fetchChildrenGrade(false);
+                            }
+                        }
+                    ]
+                );
+            } else {
+                throw new Error(apiError || 'Échec de l\'assignation à la section');
+            }
+        } catch (err: any) {
+            const errorMessage = err.message || 'Une erreur est survenue lors de l\'assignation';
+            Alert.alert('Erreur', errorMessage);
+            console.error('Error assigning to section:', err);
+        } finally {
+            setIsAddingToSection(false);
+        }
+    }, [childrenDetails?.childId, addChildGrade, fetchChildrenGrade]);
+
+    const calculateAge = useCallback((dateString: string) => {
         try {
             const birthDate = new Date(dateString);
             const today = new Date();
@@ -111,7 +312,7 @@ const ChildrenDetails = () => {
         }
     }, []);
 
-    const getStatusText = React.useCallback((statusId: number) => {
+    const getStatusText = useCallback((statusId: number) => {
         switch (statusId) {
             case 1: return 'Actif';
             case 2: return 'En attente';
@@ -120,7 +321,7 @@ const ChildrenDetails = () => {
         }
     }, []);
 
-    const getStatusColor = React.useCallback((statusId: number) => {
+    const getStatusColor = useCallback((statusId: number) => {
         switch (statusId) {
             case 1: return colors.success.main;
             case 2: return colors.warning.main;
@@ -129,60 +330,109 @@ const ChildrenDetails = () => {
         }
     }, []);
 
-    const handleBack = React.useCallback(() => {
+    const getPaymentCycleTypeText = useCallback((type: number) => {
+        switch (type) {
+            case 0: return 'Paiement complet';
+            case 1: return 'Mensuel';
+            case 2: return 'Trimestriel';
+            case 3: return 'Hebdomadaire';
+            case 4: return 'Personnalisé';
+            default: return 'Inconnu';
+        }
+    }, []);
+
+    const handleBack = useCallback(() => {
         router.back();
     }, []);
 
-    const handleRefresh = React.useCallback(async () => {
+    const handleRefresh = useCallback(async () => {
         await fetchChildrenDetails(true);
-    }, [fetchChildrenDetails]);
+        await fetchChildrenGrade(true);
+    }, [fetchChildrenDetails, fetchChildrenGrade]);
 
-    const handleRetry = React.useCallback(() => {
+    const handleRetry = useCallback(() => {
         fetchChildrenDetails(false);
-    }, [fetchChildrenDetails]);
+        fetchChildrenGrade(false);
+    }, [fetchChildrenDetails, fetchChildrenGrade]);
 
-    // const handleEdit = React.useCallback(() => {
-    //     router.push({
-    //         pathname: '/(pages)/edit-child/[id]',
-    //         params: { id: id?.toString() || '' }
-    //     });
-    // }, [id]);
+    const handleSelectPaymentCycle = useCallback(() => {
+        if (!childrenGrade) {
+            Alert.alert('Erreur', 'Impossible de sélectionner un cycle de paiement sans classe assignée.');
+            return;
+        }
 
-    const handleDelete = React.useCallback(() => {
-        Alert.alert(
-            'Supprimer l\'enfant',
-            `Êtes-vous sûr de vouloir supprimer ${childrenDetails?.firstName} ${childrenDetails?.lastName}?`,
-            [
-                { text: 'Annuler', style: 'cancel' },
-                {
-                    text: 'Supprimer',
-                    style: 'destructive',
-                    onPress: () => {
-                        console.log('Delete child:', id);
-                        router.back();
-                    }
-                }
-            ]
-        );
-    }, [childrenDetails, id]);
+        if (paymentCycles.length === 0) {
+            Alert.alert('Information', 'Aucun cycle de paiement disponible pour cette classe.');
+            return;
+        }
 
-    const handleSchoolWebsite = React.useCallback(() => {
+        setShowPaymentModal(true);
+    }, [childrenGrade, paymentCycles]);
+
+    const handlePaymentCycleSelection = useCallback(async (selectedCycle: PaymentCycle) => {
+        if (!childrenGrade) return;
+
+        try {
+            setIsSelectingCycle(true);
+
+            const { success, data, error: apiError } = await selectChildCycleSelection({
+                childGradeId: childrenGrade.childGradeId,
+                paymentCycleId: selectedCycle.paymentCycleId,
+            });
+
+            if (success) {
+                Alert.alert(
+                    'Succès',
+                    'Le cycle de paiement a été sélectionné avec succès. Les versements ont été générés.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => {
+                                // Refresh the grade selection to show the new selection
+                                fetchChildrenGradeSelection(childrenGrade.childGradeId, false);
+                            }
+                        }
+                    ]
+                );
+            } else {
+                throw new Error(apiError || 'Échec de la sélection du cycle de paiement');
+            }
+        } catch (err: any) {
+            const errorMessage = err.message || 'Une erreur est survenue lors de la sélection du cycle';
+            Alert.alert('Erreur', errorMessage);
+            console.error('Error selecting payment cycle:', err);
+        } finally {
+            setIsSelectingCycle(false);
+        }
+    }, [childrenGrade, selectChildCycleSelection, fetchChildrenGradeSelection]);
+
+    const handleSchoolWebsite = useCallback(() => {
         if (childrenDetails?.school?.schoolWebsite) {
             Linking.openURL(childrenDetails.school.schoolWebsite);
         }
     }, [childrenDetails?.school?.schoolWebsite]);
 
-    const handleSchoolPhone = React.useCallback(() => {
+    const handleSchoolPhone = useCallback(() => {
         if (childrenDetails?.school?.schoolPhoneNumber) {
             Linking.openURL(`tel:${childrenDetails.school.schoolPhoneNumber}`);
         }
     }, [childrenDetails?.school?.schoolPhoneNumber]);
 
-    const handleSchoolEmail = React.useCallback(() => {
+    const handleSchoolEmail = useCallback(() => {
         if (childrenDetails?.school?.schoolEmail) {
             Linking.openURL(`mailto:${childrenDetails.school.schoolEmail}`);
         }
     }, [childrenDetails?.school?.schoolEmail]);
+
+    const getSelectedPaymentCycleName = useCallback(() => {
+        if (!childrenGradeSelection) return null;
+
+        const selectedCycle = paymentCycles.find(
+            cycle => cycle.paymentCycleId === childrenGradeSelection.fK_PaymentCycleId
+        );
+
+        return selectedCycle ? selectedCycle.paymentCycleName : `Cycle ID: ${childrenGradeSelection.fK_PaymentCycleId}`;
+    }, [childrenGradeSelection, paymentCycles]);
     //#endregion
 
     //#region Loading State
@@ -218,43 +468,23 @@ const ChildrenDetails = () => {
     //#endregion
 
     const age = calculateAge(childrenDetails.dateOfBirth);
+    const selectedCycleName = getSelectedPaymentCycleName();
 
     return (
         <ScreenView
             safeArea={true}
             padding={false}
-            // paddingVertical={true}
             backgroundColor={colors.background.default}
         >
             {/* Header */}
             <PageHeader
                 title="Détails de l'enfant"
                 onBack={handleBack}
-            // actions={[
-            //     {
-            //         icon: 'pencil-outline',
-            //         onPress: () => console.log('Edit pressed'), // or handleEdit
-            //     },
-            //     {
-            //         icon: 'trash-outline',
-            //         onPress: handleDelete,
-            //         color: colors.error.main,
-            //     },
-            // ]}
             />
 
             <ScrollView
                 style={styles.container}
                 showsVerticalScrollIndicator={false}
-            // refreshControl={
-            //     <RefreshControl
-
-            //         refreshing={isRefreshing}
-            //         onRefresh={handleRefresh}
-            //         tintColor={colors.primary.main}
-            //         colors={[colors.primary.main]}
-            //     />
-            // }
             >
                 {/* Avatar and Name */}
                 <View style={styles.profileSection}>
@@ -298,16 +528,16 @@ const ChildrenDetails = () => {
                             </View>
                         )}
 
-                        <View style={styles.detailRow}>
+                        {/* <View style={styles.detailRow}>
                             <Ionicons name="finger-print-outline" size={20} color={colors.primary.main} />
                             <View style={styles.detailContent}>
                                 <Text style={styles.detailLabel}>{"ID de l'enfant"}</Text>
                                 <Text style={styles.detailValue}>{childrenDetails.childId}</Text>
                             </View>
-                        </View>
+                        </View> */}
                     </View>
 
-                    {/* School Information */}
+                    {/* School Information with Academic Details */}
                     {childrenDetails.school && (
                         <View style={styles.card}>
                             <Text style={styles.cardTitle}>Informations scolaires</Text>
@@ -320,66 +550,111 @@ const ChildrenDetails = () => {
                                 </View>
                             </View>
 
-                            <View style={styles.detailRow}>
-                                <Ionicons name="location-outline" size={20} color={colors.primary.main} />
-                                <View style={styles.detailContent}>
-                                    <Text style={styles.detailLabel}>Adresse</Text>
-                                    <Text style={styles.detailValue}>{childrenDetails.school.schoolAddress}</Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.detailRow}>
-                                <Ionicons name="call-outline" size={20} color={colors.primary.main} />
-                                <View style={styles.detailContent}>
-                                    <Text style={styles.detailLabel}>Téléphone</Text>
-                                    <TouchableOpacity onPress={handleSchoolPhone}>
-                                        <Text style={[styles.detailValue, styles.linkText]}>
-                                            {childrenDetails.school.schoolPhoneNumber}
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-
-                            <View style={styles.detailRow}>
-                                <Ionicons name="mail-outline" size={20} color={colors.primary.main} />
-                                <View style={styles.detailContent}>
-                                    <Text style={styles.detailLabel}>Email</Text>
-                                    <TouchableOpacity onPress={handleSchoolEmail}>
-                                        <Text style={[styles.detailValue, styles.linkText]}>
-                                            {childrenDetails.school.schoolEmail}
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-
-                            <View style={styles.detailRow}>
-                                <Ionicons name="globe-outline" size={20} color={colors.primary.main} />
-                                <View style={styles.detailContent}>
-                                    <Text style={styles.detailLabel}>Site web</Text>
-                                    <TouchableOpacity onPress={handleSchoolWebsite}>
-                                        <Text style={[styles.detailValue, styles.linkText]}>
-                                            {childrenDetails.school.schoolWebsite}
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-
-                            <View style={styles.detailRow}>
-                                <Ionicons name="time-outline" size={20} color={colors.primary.main} />
-                                <View style={styles.detailContent}>
-                                    <Text style={styles.detailLabel}>Établi en</Text>
-                                    <Text style={styles.detailValue}>{childrenDetails.school.schoolEstablishedYear}</Text>
-                                </View>
-                            </View>
-
-                            {childrenDetails.school.schoolDescription && (
-                                <View style={styles.detailRow}>
-                                    <Ionicons name="information-circle-outline" size={20} color={colors.primary.main} />
-                                    <View style={styles.detailContent}>
-                                        <Text style={styles.detailLabel}>Description</Text>
-                                        <Text style={styles.detailValue}>{childrenDetails.school.schoolDescription}</Text>
+                            {/* Show grade section if available */}
+                            {childrenGrade ? (
+                                <>
+                                    <View style={styles.detailRow}>
+                                        <Ionicons name="library-outline" size={20} color={colors.primary.main} />
+                                        <View style={styles.detailContent}>
+                                            <Text style={styles.detailLabel}>Section</Text>
+                                            <Text style={styles.detailValue}>{childrenGrade.schoolGradeSection.schoolGradeName}</Text>
+                                        </View>
                                     </View>
+
+                                    <View style={styles.detailRow}>
+                                        <Ionicons name="cash-outline" size={20} color={colors.primary.main} />
+                                        <View style={styles.detailContent}>
+                                            <Text style={styles.detailLabel}>Frais de scolarité</Text>
+                                            <Text style={styles.detailValue}>
+                                                {childrenGrade.schoolGradeSection.schoolGradeFee.toLocaleString()} CFA
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.detailRow}>
+                                        <Ionicons name="calendar-number-outline" size={20} color={colors.primary.main} />
+                                        <View style={styles.detailContent}>
+                                            <Text style={styles.detailLabel}>Période</Text>
+                                            <Text style={styles.detailValue}>
+                                                {formatDate(childrenGrade.schoolGradeSection.termStartDate)} - {formatDate(childrenGrade.schoolGradeSection.termEndDate)}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </>
+                            ) : (
+                                <View style={styles.noSectionContainer}>
+                                    <View style={styles.detailRow}>
+                                        <Ionicons name="information-circle-outline" size={20} color={colors.warning.main} />
+                                        <View style={styles.detailContent}>
+                                            <Text style={styles.detailLabel}>Section</Text>
+                                            <Text style={styles.detailValue}>Aucune section assignée</Text>
+                                        </View>
+                                    </View>
+
+                                    <CustomButton
+                                        id='select-section'
+                                        title={isAddingToSection ? "Assignation..." : "Sélectionner une section"}
+                                        leftIcon={isAddingToSection ? undefined : 'library-outline'}
+                                        size='sm'
+                                        onPress={handleSelectSection}
+                                        disabled={isAddingToSection || isLoadingSections}
+                                        loading={isAddingToSection}
+                                        fullWidth={false}
+                                        style={styles.selectSectionButton}
+                                    />
+
+                                    {schoolSections.length > 0 && (
+                                        <Text style={styles.sectionHint}>
+                                            {schoolSections.length} section{schoolSections.length > 1 ? 's' : ''} disponible{schoolSections.length > 1 ? 's' : ''}
+                                        </Text>
+                                    )}
                                 </View>
+                            )}
+
+                            {/* Payment Cycle Selection */}
+                            {childrenGrade && (
+                                <>
+                                    {childrenGradeSelection ? (
+                                        <View style={styles.detailRow}>
+                                            <Ionicons name="checkmark-circle-outline" size={20} color={colors.success.main} />
+                                            <View style={styles.detailContent}>
+                                                <Text style={styles.detailLabel}>Cycle de paiement</Text>
+                                                <Text style={styles.detailValue}>{selectedCycleName}</Text>
+                                                <Text style={styles.detailSubValue}>
+                                                    Total: {childrenGradeSelection.totalFee?.toLocaleString()} CFA
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    ) : (
+                                        <View style={styles.noCycleRow}>
+                                            <View style={styles.detailRow}>
+                                                <Ionicons name="alert-circle-outline" size={20} color={colors.warning.main} />
+                                                <View style={styles.detailContent}>
+                                                    <Text style={styles.detailLabel}>Cycle de paiement</Text>
+                                                    <Text style={styles.detailValue}>Aucun cycle sélectionné</Text>
+                                                </View>
+                                            </View>
+
+                                            <CustomButton
+                                                id='select-payment-cycle'
+                                                title={isSelectingCycle ? "Sélection..." : "Sélectionner un cycle"}
+                                                leftIcon={isSelectingCycle ? undefined : 'card-outline'}
+                                                size='sm'
+                                                onPress={handleSelectPaymentCycle}
+                                                disabled={isSelectingCycle || isLoadingCycles}
+                                                loading={isSelectingCycle}
+                                                fullWidth={false}
+                                                style={styles.selectCycleButton}
+                                            />
+
+                                            {paymentCycles.length > 0 && (
+                                                <Text style={styles.cycleHint}>
+                                                    {paymentCycles.length} cycle{paymentCycles.length > 1 ? 's' : ''} disponible{paymentCycles.length > 1 ? 's' : ''}
+                                                </Text>
+                                            )}
+                                        </View>
+                                    )}
+                                </>
                             )}
                         </View>
                     )}
@@ -408,6 +683,22 @@ const ChildrenDetails = () => {
                     </View>
                 </View>
             </ScrollView>
+
+            {/* Payment Cycle Selection Modal */}
+            <PaymentCycleModal
+                visible={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                paymentCycles={paymentCycles}
+                isLoading={isLoadingCycles}
+                onSelectCycle={handlePaymentCycleSelection}
+            />
+            <SectionSelectionModal
+                visible={showSectionModal}
+                onClose={() => setShowSectionModal(false)}
+                sections={schoolSections}
+                isLoading={isLoadingSections}
+                onSelectSection={handleSectionSelection}
+            />
         </ScreenView>
     );
 };
@@ -457,36 +748,6 @@ const styles = StyleSheet.create({
     },
     backButton: {
         backgroundColor: colors.secondary.main,
-    },
-
-    // Header
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: spacingX._20,
-        paddingVertical: spacingY._15,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border?.light || '#e1e5e9',
-        backgroundColor: colors.background.paper,
-    },
-    headerBackButton: {
-        padding: spacingX._5,
-    },
-    headerTitle: {
-        fontSize: scaleFont(18),
-        fontWeight: '600',
-        color: colors.text.primary,
-        flex: 1,
-        textAlign: 'center',
-    },
-    headerActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    actionButton: {
-        padding: spacingX._7,
-        marginLeft: spacingX._5,
     },
 
     // Profile Section
@@ -568,8 +829,47 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         color: colors.text.primary,
     },
+    detailSubValue: {
+        fontSize: scaleFont(12),
+        color: colors.text.secondary,
+        marginTop: spacingY._3,
+    },
     linkText: {
         color: colors.primary.main,
         textDecorationLine: 'underline',
+    },
+
+    // Payment Cycle Section
+    noCycleRow: {
+        paddingTop: spacingY._10,
+        borderTopWidth: 1,
+        borderTopColor: colors.border?.light || '#e1e5e9',
+        marginTop: spacingY._5,
+    },
+    selectCycleButton: {
+        marginTop: spacingY._10,
+        alignSelf: 'flex-start',
+    },
+    cycleHint: {
+        fontSize: scaleFont(11),
+        color: colors.text.secondary,
+        marginTop: spacingY._7,
+        fontStyle: 'italic',
+    },
+    noSectionContainer: {
+        paddingTop: spacingY._10,
+        borderTopWidth: 1,
+        borderTopColor: colors.border?.light || '#e1e5e9',
+        marginTop: spacingY._5,
+    },
+    selectSectionButton: {
+        marginTop: spacingY._10,
+        alignSelf: 'flex-start',
+    },
+    sectionHint: {
+        fontSize: scaleFont(11),
+        color: colors.text.secondary,
+        marginTop: spacingY._7,
+        fontStyle: 'italic',
     },
 });

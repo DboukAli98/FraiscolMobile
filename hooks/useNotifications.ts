@@ -65,7 +65,10 @@ export const useNotifications = () => {
           
           while (attempts < maxAttempts) {
             try {
-              const pushToken = await OneSignal.User.pushSubscription.getTokenAsync();
+              
+              const pushToken = await OneSignal.User.pushSubscription.getIdAsync();
+
+              console.log('Current push token:', pushToken);
               
               if (pushToken) {
                 console.log('Push token found, registering device...');
@@ -118,13 +121,13 @@ export const useNotifications = () => {
       }
 
       // If no token and we haven't retried too many times, retry
-      if (!pushToken && retryCount < 3) {
+      if (!pushSubscriptionId && retryCount < 3) {
         console.log(`No push token available, retrying in 2 seconds... (${retryCount + 1}/3)`);
         await new Promise(resolve => setTimeout(resolve, 2000));
         return registerDevice(userId, role, retryCount + 1);
       }
 
-      if (!pushToken) {
+      if (!pushSubscriptionId) {
         throw new Error('Push token not available after retries');
       }
 
