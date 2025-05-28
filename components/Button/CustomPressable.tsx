@@ -353,6 +353,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
                         style={[
                             styles.buttonText,
                             {
+                                textAlign:"center",
                                 fontSize: sizes.fontSize,
                                 color: getTextColor(),
                             },
@@ -472,8 +473,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     buttonText: {
-        fontWeight: '600',
+        fontWeight: '500',
         textAlign: 'center',
+        textAlignVertical: 'center', // Add this for Android
+        includeFontPadding: false,   // Add this for Android
+        lineHeight: undefined, 
     },
     loadingIndicator: {
         marginRight: spacingX._10,

@@ -191,12 +191,6 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
         return minDate;
     };
 
-    // Format date for display
-    const formatDateForInput = (dateString: string) => {
-        // This would be used if you have a date picker component
-        return dateString;
-    };
-
     // School options for select
     const schoolOptions = schools.map(school => ({
         label: school.schoolName,
@@ -210,6 +204,8 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
             title="Ajouter un enfant"
             subtitle="Remplissez les informations de l'enfant"
             enableDragToExpand={false}
+            enableSwipeDown={false} // Disable swipe down to prevent interference
+            
         >
             <KeyboardAvoidingView
                 style={styles.container}
@@ -217,8 +213,13 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
             >
                 <ScrollView
                     style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
+                    // These props help prevent the modal from intercepting scroll gestures
+                    nestedScrollEnabled={true}
+                    scrollEnabled={true}
+                    bounces={false} // Disable bounce to prevent interference with modal gestures
                 >
                     <View style={styles.formContainer}>
                         {/* First Name */}
@@ -330,7 +331,6 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
                                     options={schoolOptions}
                                     selectedValue={selectedSchoolId}
                                     onSelect={(value) => setSelectedSchoolId(value as number)}
-
                                     placeholder="Sélectionnez une école"
                                     error={errors.schoolId}
                                 />
@@ -352,8 +352,8 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
                     <CustomButton
                         title="Annuler"
                         onPress={onClose}
-                        variant="outlined"
-                        color="secondary"
+                        variant="filled"
+                        color="error"
                         fullWidth={false}
                         style={styles.cancelButton}
                         disabled={isSubmitting}
@@ -379,12 +379,19 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        maxHeight: '100%', 
+        marginTop:spacingY._10
     },
     scrollView: {
         flex: 1,
+        maxHeight: '100%', 
+    },
+    scrollContent: {
+        flexGrow: 1,
+        paddingBottom: spacingY._10, 
     },
     formContainer: {
-        paddingBottom: spacingY._20,
+        paddingBottom: spacingY._30,
     },
     fieldContainer: {
         marginBottom: spacingY._20,

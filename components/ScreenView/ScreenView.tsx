@@ -9,6 +9,8 @@ import {
   View,
   ViewStyle
 } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 
 interface ScreenViewProps {
   children: React.ReactNode;
@@ -105,14 +107,16 @@ export const ScreenView: React.FC<ScreenViewProps> = ({
           backgroundColor={statusBarBackgroundColor || backgroundColor}
           translucent={false}
         />
-        <SafeAreaView style={safeAreaStyle}>
+        <SafeAreaProvider style={safeAreaStyle}>
+       
           <ContentWrapper 
             style={scrollable ? { flex: 1 } : [contentContainerStyle, contentStyle]}
             {...scrollViewProps}
           >
             {children}
           </ContentWrapper>
-        </SafeAreaView>
+       
+        </SafeAreaProvider>
       </>
     );
   }
