@@ -232,6 +232,7 @@ const SchoolDetailsScreen = () => {
         <ScreenView
             safeArea={true}
             padding={false}
+            paddingVertical={true}
             backgroundColor={colors.background.default}
         >
             {/* Header */}

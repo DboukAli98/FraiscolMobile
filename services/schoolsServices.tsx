@@ -55,6 +55,23 @@ export interface GetSchoolGradesSectionsResponse {
     message: string | null;
 }
 
+export interface GetAllSchoolsParams {
+    pageNumber?: number;
+    pageSize?: number;
+    search?: string;
+    onlyEnabled?: boolean;
+}
+
+export interface GetAllSchoolsResponse {
+    data: School[] | null;
+    pageNumber: number;
+    pageSize: number;
+    totalCount: number;
+    status: string;
+    error: any | null;
+    message: string | null;
+}
+
 //#endregion
 
 export const useGetSchoolDetails = () => {
@@ -157,4 +174,57 @@ export const useGetSchoolGradesSections = () => {
     );
 
     return getSchoolGradesSections;
+};
+
+export const useGetAllSchools = () => {
+    const api = useApiInstance({
+        headers: {
+            "Content-Type": "application/json",
+            "Accept-Language": "en"
+        },
+    });
+
+    const getAllSchools = useCallback(
+        async ({
+            onlyEnabled = true,
+            pageNumber = 1,
+            pageSize = 10,
+            search = "",
+        }: GetAllSchoolsParams): Promise<ApiResponse<GetAllSchoolsResponse>> => {
+            const request = {
+                OnlyEnabled: onlyEnabled,
+                PageNumber: pageNumber,
+                PageSize: pageSize,
+                Search: search,
+            };
+
+            try {
+                const response = await api.post<GetAllSchoolsResponse>(
+                    `/api/School/SchoolsListing`, request
+                );
+
+                return {
+                    success: true,
+                    status: response.status,
+                    data: response.data,
+                    error: null,
+                };
+            } catch (error: any) {
+                const status = error.response ? error.response.status : 0;
+                const errorData = error.response ? error.response.data : null;
+
+
+
+                return {
+                    success: false,
+                    status: status,
+                    data: null,
+                    error: errorData || "An error occurred while fetching parent childrens",
+                };
+            }
+        },
+        [api]
+    );
+
+    return getAllSchools;
 };

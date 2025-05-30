@@ -15,7 +15,7 @@ import {
 import { QuickActionData, QuickActionItem } from '@/GeneralData/GeneralData';
 import { useNotifications } from '@/hooks/useNotifications';
 import useUserInfo from '@/hooks/useUserInfo';
-import { useLogout } from '@/services/userServices';
+import { useGetParentCurrentMonthTotalFees, useLogout } from '@/services/userServices';
 import { SCREEN_HEIGHT } from '@/utils/stylings';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -28,10 +28,47 @@ export default function HomeScreen() {
 
   const logoutUser = useLogout();
 
+  const getParentCurrentMonthTotalFees = useGetParentCurrentMonthTotalFees();
+
 
   //#region States
 
   const [basicModalVisible, setBasicModalVisible] = useState(false);
+
+  const [totalFees, setTotalFees] = useState<string>();
+  const [loading, setLoading] = useState(false);
+
+
+  //#endregion
+
+  //#region Fetchings
+
+  const fetchParentCurrentMonthTotalFee = async () => {
+    try {
+      setLoading(true);
+      const parentId = typeof userInfo?.parentId === 'number'
+        ? userInfo.parentId
+        : Number(userInfo?.parentId ?? 0);
+      const { success, data, error } = await getParentCurrentMonthTotalFees({ parentId });
+
+      if (success) {
+        setTotalFees(data?.data || "0");
+
+      }
+
+      if (error) {
+        console.log("error in fetching parent total fee ::: ", error)
+      }
+
+    } catch (error) {
+      console.log("internal error in fetching parent total fee ::: ", error)
+      setTotalFees("0");
+    } finally {
+      setLoading(false);
+
+    }
+  }
+
 
 
   //#endregion
@@ -83,6 +120,10 @@ export default function HomeScreen() {
     }
   }, [hasRequestedPermission, requestNotificationPermission]);
 
+  useEffect(() => {
+    fetchParentCurrentMonthTotalFee()
+  }, [userInfo?.parentId])
+
   //#endregion
 
   return (
@@ -113,7 +154,7 @@ export default function HomeScreen() {
           <CardHeader titleStyle={styles.cardHeaderTitleStyle} title='Total à payer ce mois-ci' />
 
           <CardBody style={styles.mainCardBody}>
-            <Text style={styles.mainCardAmountText}>0</Text>
+            <Text style={styles.mainCardAmountText}>{totalFees}</Text>
             <Text style={styles.mainCardCurrencyText}>CFA</Text>
           </CardBody>
 

@@ -94,6 +94,15 @@ interface GetParentSchoolsResponse {
 }
 
 
+interface GetParentCurrentMonthTotalFeesParams {
+  parentId: number;
+
+}
+
+interface GetParentCurrentMonthTotalFeesResponse {
+  data: string | null;
+
+}
 
 
 //#endregion
@@ -358,3 +367,51 @@ export const useGetParentSchools = () => {
   return getParentSchools;
 };
 
+export const useGetParentCurrentMonthTotalFees = () => {
+  const api = useApiInstance({
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
+    },
+  });
+
+  const getParentCurrentMonthTotalFees = useCallback(
+    async ({
+      parentId,
+
+    }: GetParentCurrentMonthTotalFeesParams): Promise<ApiResponse<GetParentCurrentMonthTotalFeesResponse>> => {
+      const params = new URLSearchParams({
+        ParentId: parentId.toString(),
+
+      }).toString();
+
+      try {
+        const response = await api.get<GetParentCurrentMonthTotalFeesResponse>(
+          `/api/Parents/GetParentMonthPaymentFee?${params}`
+        );
+
+        return {
+          success: true,
+          status: response.status,
+          data: response.data,
+          error: null,
+        };
+      } catch (error: any) {
+        const status = error.response ? error.response.status : 0;
+        const errorData = error.response ? error.response.data : null;
+
+
+
+        return {
+          success: false,
+          status: status,
+          data: null,
+          error: errorData || "An error occurred while fetching parent childrens",
+        };
+      }
+    },
+    [api]
+  );
+
+  return getParentCurrentMonthTotalFees;
+};

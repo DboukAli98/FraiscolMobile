@@ -9,6 +9,7 @@ import { useChildrenData } from '@/hooks/useChildrenData';
 import useUserInfo from '@/hooks/useUserInfo';
 import { useAddChildrenToSystem } from '@/services/childGradeServices';
 import { School } from '@/services/childrenServices';
+import { useGetAllSchools } from '@/services/schoolsServices';
 import { useGetParentSchools } from '@/services/userServices';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -46,6 +47,8 @@ const ChildrensScreen = () => {
 
     const addChildrenToSystem = useAddChildrenToSystem();
     const getParentSchools = useGetParentSchools();
+
+    const getAllSchools = useGetAllSchools();
 
     const {
         children,
@@ -141,16 +144,12 @@ const ChildrensScreen = () => {
     }, []);
 
     const fetchSchools = useCallback(async () => {
-        if (!userInfo?.parentId) {
-            console.error('Parent ID not found');
-            return;
-        }
+
 
         try {
             setIsLoadingSchools(true);
 
-            const { success, data, error: apiError } = await getParentSchools({
-                parentId: parseInt(userInfo.parentId),
+            const { success, data, error: apiError } = await getAllSchools({
                 pageNumber: 1,
                 pageSize: 100, // Get all schools
             });
@@ -167,7 +166,7 @@ const ChildrensScreen = () => {
         } finally {
             setIsLoadingSchools(false);
         }
-    }, [userInfo?.parentId, getParentSchools]);
+    }, [getAllSchools]);
 
 
     const keyExtractor = useCallback((item: ChildrenListItem) =>
