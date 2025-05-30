@@ -30,19 +30,20 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
-      <PersistGate
-        loading={
-          <SafeAreaProvider>
+      <SafeAreaProvider>
+        <PersistGate
+          loading={
+
             <SafeAreaView style={styles.container}>
               <View style={styles.loadingContainer}>
                 <Text style={styles.loadingText}>Loading...</Text>
               </View>
             </SafeAreaView>
-          </SafeAreaProvider>
-        }
-        persistor={persistor}
-      >
-        <SafeAreaProvider>
+
+          }
+          persistor={persistor}
+        >
+
           <SafeAreaView style={styles.container}>
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />
@@ -52,8 +53,9 @@ export default function RootLayout() {
 
             </Stack>
           </SafeAreaView>
-        </SafeAreaProvider>
-      </PersistGate>
+
+        </PersistGate>
+      </SafeAreaProvider>
     </Provider>
   );
 }
