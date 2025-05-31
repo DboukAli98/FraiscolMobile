@@ -104,6 +104,44 @@ interface GetParentCurrentMonthTotalFeesResponse {
 
 }
 
+export interface ParentInstallmentDto {
+  installmentId: number;
+  fK_ChildCycleSelectionId: number;
+  amount: number;
+  dueDate: string;
+  isPaid: boolean;
+  paidDate?: string;
+  lateFee?: number;
+  fK_ChildId: number;
+  childName: string;
+  className: string;
+  schoolName: string;
+}
+
+export interface GetParentInstallmentsParams {
+  parentId: number;
+  childId?: number;
+  schoolId?: number;
+  schoolGradeSectionId?: number;
+  pageNumber?: number;
+  pageSize?: number;
+}
+
+export interface GetParentInstallmentsResponse {
+  data: ParentInstallmentDto[] | null;
+  pageNumber: number;
+  pageSize: number;
+  totalRecords: number;
+  status: string;
+  error: any | null;
+  message: string | null;
+}
+
+export interface FilterOption {
+  id: number;
+  name: string;
+}
+
 
 //#endregion
 
@@ -415,3 +453,62 @@ export const useGetParentCurrentMonthTotalFees = () => {
 
   return getParentCurrentMonthTotalFees;
 };
+
+export const useGetParentInstallments = () => {
+  const api = useApiInstance({
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
+    },
+  });
+
+  const getParentInstallments = useCallback(
+    async ({
+      parentId,
+      childId,
+      schoolId,
+      schoolGradeSectionId,
+      pageNumber = 1,
+      pageSize = 10,
+    }: GetParentInstallmentsParams): Promise<ApiResponse<GetParentInstallmentsResponse>> => {
+      const params = new URLSearchParams({
+        ParentId: parentId.toString(),
+        PageNumber: pageNumber.toString(),
+        PageSize: pageSize.toString(),
+      });
+
+      if (childId) params.append('ChildId', childId.toString());
+      if (schoolId) params.append('SchoolId', schoolId.toString());
+      if (schoolGradeSectionId) params.append('SchoolGradeSectionId', schoolGradeSectionId.toString());
+
+      try {
+        const response = await api.get<GetParentInstallmentsResponse>(
+          `/api/Parents/GetParentInstallments?${params.toString()}`
+        );
+
+        return {
+          success: true,
+          status: response.status,
+          data: response.data,
+          error: null,
+        };
+      } catch (error: any) {
+        const status = error.response ? error.response.status : 0;
+        const errorData = error.response ? error.response.data : null;
+
+        console.error("Get parent installments error:", error);
+
+        return {
+          success: false,
+          status: status,
+          data: null,
+          error: errorData || "An error occurred while fetching parent installments",
+        };
+      }
+    },
+    [api]
+  );
+
+  return getParentInstallments;
+};
+

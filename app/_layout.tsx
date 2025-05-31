@@ -11,6 +11,12 @@ import { PersistGate } from 'redux-persist/integration/react';
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
+// Setting the animation options 
+SplashScreen.setOptions({
+  duration: 1000,
+  fade: true,
+});
+
 export default function RootLayout() {
   useEffect(() => {
     // One Signal Enabling verbose logging for debugging 
