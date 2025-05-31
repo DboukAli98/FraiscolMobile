@@ -10,10 +10,10 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    TouchableOpacity,
     View,
     ViewStyle
 } from 'react-native';
+import ErrorComponent from '../ErrorComponent/ErrorComponent';
 
 // Generic interfaces for the list component
 export interface ListItem {
@@ -198,18 +198,7 @@ export const InfiniteList = <T extends ListItem>({
 
         if (error) {
             return (
-                <View style={styles.centerContainer}>
-                    <Text style={styles.errorTitle}>Something went wrong</Text>
-                    <Text style={styles.errorSubtitle}>{error}</Text>
-                    {onRetry && (
-                        <TouchableOpacity
-                            style={styles.retryButton}
-                            onPress={onRetry}
-                        >
-                            <Text style={styles.retryButtonText}>Try Again</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
+                <ErrorComponent error={error} onRetry={onRetry} />
             );
         }
 
