@@ -122,10 +122,10 @@ export const useChildrenData = ({
         setHasNextPage(page < totalPages);
         
       } else {
-        throw new Error(response.error || 'Failed to fetch children');
+        throw new Error(response.error || 'Impossible de récupérer les enfants');
       }
     } catch (err: any) {
-      const errorMessage = err.message || 'An error occurred while fetching children';
+      const errorMessage = err.message || "Une erreur s'est produite lors de la récupération des enfants";
       setError(errorMessage);
       console.error('Error fetching children:', err);
     } finally {
