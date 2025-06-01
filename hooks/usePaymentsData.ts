@@ -2,9 +2,9 @@
 
 import useUserInfo from '@/hooks/useUserInfo';
 import {
-    GetParentInstallmentsParams,
-    ParentInstallmentDto,
-    useGetParentInstallments
+  GetParentInstallmentsParams,
+  ParentInstallmentDto,
+  useGetParentInstallments
 } from '@/services/userServices';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -258,11 +258,11 @@ export const usePaymentsData = ({
   // yet successfully fetched page 1. We do NOT flip `didFetchOnce = true` here;
   // we leave that to `fetchInstallmentsInternal` itself (but only if page 1 
   // returned without error).
-  useEffect(() => {
-    if (parentId && !didFetchOnce) {
-      fetchInstallmentsInternal(1, {}, false, false);
-    }
-  }, [parentId, didFetchOnce]);
+useEffect(() => {
+  if (parentId && !didFetchOnce) {
+    fetchInstallmentsInternal(1, filters, false, false);
+  }
+}, [parentId, didFetchOnce, filters]);
 
   //───────────────────────────────────────────────────────────────────────────
   // Calculate summary data
