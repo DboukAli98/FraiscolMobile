@@ -131,17 +131,50 @@ export interface GetParentInstallmentsResponse {
   data: ParentInstallmentDto[] | null;
   pageNumber: number;
   pageSize: number;
-  totalRecords: number;
+  totalCount: number;
   status: string;
   error: any | null;
   message: string | null;
 }
 
+// Filter Data Interfaces
 export interface FilterOption {
   id: number;
   name: string;
 }
 
+export interface ChildrenFilterDto {
+  childId: number;
+  childName: string;
+}
+
+export interface SchoolFilterDto {
+  schoolId: number;
+  schoolName: string;
+}
+
+export interface SchoolGradeFilterDto {
+  gradeSectionId: number;
+  gradeSectionName: string;
+}
+
+export interface GetParentInstallmentFilterDataParams {
+  parentId: number;
+  filterName: 'childrens' | 'schools' | 'schoolgrades';
+  pageNumber?: number;
+  pageSize?: number;
+}
+
+export interface GetParentInstallmentFilterDataResponse {
+  filterName: string;
+  data: any[] | null;
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  status: string;
+  error: any | null;
+  message: string | null;
+}
 
 //#endregion
 
@@ -477,14 +510,33 @@ export const useGetParentInstallments = () => {
         PageSize: pageSize.toString(),
       });
 
+
+
       if (childId) params.append('ChildId', childId.toString());
       if (schoolId) params.append('SchoolId', schoolId.toString());
       if (schoolGradeSectionId) params.append('SchoolGradeSectionId', schoolGradeSectionId.toString());
+
+      const queryString = params.toString();
+      const fullUrl = `/api/Parents/GetParentInstallments?${queryString}`;
+
+      // ✅ ENHANCED DEBUG LOGGING
+      console.log('🔍 API Call Debug Info:');
+      console.log('   URL:', fullUrl);
+      console.log('   Parent ID:', parentId);
+      console.log('   Filters:', { childId, schoolId, schoolGradeSectionId });
+      console.log('   Base URL from apiClient:', api.defaults?.baseURL);
 
       try {
         const response = await api.get<GetParentInstallmentsResponse>(
           `/api/Parents/GetParentInstallments?${params.toString()}`
         );
+
+        console.log('✅ API Success:', {
+          status: response.status,
+          dataCount: response.data?.data?.length,
+          totalRecords: response.data?.totalCount
+        });
+
 
         return {
           success: true,
@@ -495,8 +547,15 @@ export const useGetParentInstallments = () => {
       } catch (error: any) {
         const status = error.response ? error.response.status : 0;
         const errorData = error.response ? error.response.data : null;
+        const errorText = error.response ? await error.response.text?.() : null;
 
-        console.error("Get parent installments error:", error);
+        // ✅ ENHANCED ERROR LOGGING
+        console.error('❌ API Error Details:');
+        console.error('   Status:', status);
+        console.error('   URL:', fullUrl);
+        console.error('   Error Data:', errorData);
+        console.error('   Error Text:', errorText);
+        console.error('   Full Error:', error.response);
 
         return {
           success: false,
@@ -510,5 +569,200 @@ export const useGetParentInstallments = () => {
   );
 
   return getParentInstallments;
+};
+
+export const useGetParentInstallmentFilterData = () => {
+  const api = useApiInstance({
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
+    },
+  });
+
+  const getParentInstallmentFilterData = useCallback(
+    async ({
+      parentId,
+      filterName,
+      pageNumber = 1,
+      pageSize = 100, // Large page size for filter options
+    }: GetParentInstallmentFilterDataParams): Promise<ApiResponse<GetParentInstallmentFilterDataResponse>> => {
+      const params = new URLSearchParams({
+        ParentId: parentId.toString(),
+        FilterName: filterName,
+        PageNumber: pageNumber.toString(),
+        PageSize: pageSize.toString(),
+      });
+
+      try {
+        const response = await api.get<GetParentInstallmentFilterDataResponse>(
+          `/api/Parents/GetParentInstallmentFilterData?${params.toString()}`
+        );
+
+        return {
+          success: true,
+          status: response.status,
+          data: response.data,
+          error: null,
+        };
+      } catch (error: any) {
+        const status = error.response ? error.response.status : 0;
+        const errorData = error.response ? error.response.data : null;
+
+        console.error("Get parent installment filter data error:", error);
+
+        return {
+          success: false,
+          status: status,
+          data: null,
+          error: errorData || "An error occurred while fetching filter data",
+        };
+      }
+    },
+    [api]
+  );
+
+  return getParentInstallmentFilterData;
+};
+
+// Specific Filter Services using the unified API
+export const useGetChildrenForFilter = () => {
+  const getParentInstallmentFilterData = useGetParentInstallmentFilterData();
+
+  const getChildrenForFilter = useCallback(
+    async (parentId: number): Promise<ApiResponse<FilterOption[]>> => {
+      try {
+        const response = await getParentInstallmentFilterData({
+          parentId,
+          filterName: 'childrens',
+        });
+
+        if (response.success && response.data?.data) {
+          const children: FilterOption[] = response.data.data.map((child: ChildrenFilterDto) => ({
+            id: child.childId,
+            name: child.childName,
+          }));
+
+          return {
+            success: true,
+            status: response.status,
+            data: children,
+            error: null,
+          };
+        }
+
+        return {
+          success: false,
+          status: response.status,
+          data: [],
+          error: response.data?.error || response.error || "Failed to fetch children",
+        };
+      } catch (error: any) {
+        console.error("Get children for filter error:", error);
+        return {
+          success: false,
+          status: 0,
+          data: [],
+          error: "An error occurred while fetching children",
+        };
+      }
+    },
+    [getParentInstallmentFilterData]
+  );
+
+  return getChildrenForFilter;
+};
+
+export const useGetSchoolsForFilter = () => {
+  const getParentInstallmentFilterData = useGetParentInstallmentFilterData();
+
+  const getSchoolsForFilter = useCallback(
+    async (parentId: number): Promise<ApiResponse<FilterOption[]>> => {
+      try {
+        const response = await getParentInstallmentFilterData({
+          parentId,
+          filterName: 'schools',
+        });
+
+        if (response.success && response.data?.data) {
+          const schools: FilterOption[] = response.data.data.map((school: SchoolFilterDto) => ({
+            id: school.schoolId,
+            name: school.schoolName,
+          }));
+
+          return {
+            success: true,
+            status: response.status,
+            data: schools,
+            error: null,
+          };
+        }
+
+        return {
+          success: false,
+          status: response.status,
+          data: [],
+          error: response.data?.error || response.error || "Failed to fetch schools",
+        };
+      } catch (error: any) {
+        console.error("Get schools for filter error:", error);
+        return {
+          success: false,
+          status: 0,
+          data: [],
+          error: "An error occurred while fetching schools",
+        };
+      }
+    },
+    [getParentInstallmentFilterData]
+  );
+
+  return getSchoolsForFilter;
+};
+
+export const useGetGradeSectionsForFilter = () => {
+  const getParentInstallmentFilterData = useGetParentInstallmentFilterData();
+
+  const getGradeSectionsForFilter = useCallback(
+    async (parentId: number): Promise<ApiResponse<FilterOption[]>> => {
+      try {
+        const response = await getParentInstallmentFilterData({
+          parentId,
+          filterName: 'schoolgrades',
+        });
+
+        if (response.success && response.data?.data) {
+          const gradeSections: FilterOption[] = response.data.data.map((grade: SchoolGradeFilterDto) => ({
+            id: grade.gradeSectionId,
+            name: grade.gradeSectionName,
+          }));
+
+          return {
+            success: true,
+            status: response.status,
+            data: gradeSections,
+            error: null,
+          };
+        }
+
+        return {
+          success: false,
+          status: response.status,
+          data: [],
+          error: response.data?.error || response.error || "Failed to fetch grade sections",
+        };
+      } catch (error: any) {
+        console.error("Get grade sections for filter error:", error);
+        return {
+          success: false,
+          status: 0,
+          data: [],
+          error: "An error occurred while fetching grade sections",
+        };
+      }
+    },
+    [getParentInstallmentFilterData]
+  );
+
+  return getGradeSectionsForFilter;
 };
 
