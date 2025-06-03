@@ -7,11 +7,11 @@ import { colors, spacingY } from '@/constants/theme';
 import { useSchoolsData } from '@/hooks/useSchoolsData';
 import { School } from '@/services/childrenServices';
 import { Ionicons } from '@expo/vector-icons';
+import { ListRenderItem } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import React, { useCallback } from 'react';
 import {
     Alert,
-    ListRenderItem,
     StyleSheet,
     Text,
     View,
@@ -141,7 +141,7 @@ const SchoolsScreen = () => {
             paddingVertical={true}
             backgroundColor={colors.background.default}
         >
-            <PageHeader title="Votre Écoles" onBack={handleBack} />
+            <PageHeader title="Vos Écoles" onBack={handleBack} />
             <InfiniteList<SchoolListItem>
                 data={listData}
                 renderItem={renderSchoolItem}
@@ -162,11 +162,13 @@ const SchoolsScreen = () => {
                 error={error}
                 onRetry={retry}
                 ListHeaderComponent={ListHeaderComponent}
-                contentContainerStyle={styles.listContainer}
+                estimatedItemSize={150} // Add this for FlashList (schools might be taller than children)
                 accessibilityLabel="Liste des écoles"
-                windowSize={10}
-                maxToRenderPerBatch={10}
-                removeClippedSubviews={true}
+            // Remove these FlatList-specific props:
+            // windowSize={10}
+            // maxToRenderPerBatch={10}
+            // removeClippedSubviews={true}
+            // contentContainerStyle={styles.listContainer} // Handled internally now
             />
         </ScreenView>
     );
@@ -175,10 +177,7 @@ const SchoolsScreen = () => {
 export default SchoolsScreen;
 
 const styles = StyleSheet.create({
-    listContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: spacingY._20,
-    },
+    // Remove listContainer since it's handled internally
     header: {
         paddingVertical: spacingY._20,
         paddingHorizontal: 4,

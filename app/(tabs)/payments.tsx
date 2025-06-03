@@ -20,11 +20,10 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
-  ListRenderItem,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 interface FiltersState {
@@ -143,14 +142,17 @@ const PaymentsScreen: React.FC = () => {
   }, []);
 
   // Render payment item
-  const renderPaymentItem: ListRenderItem<PaymentListItem> = useCallback(({ item }) => (
-    <PaymentItem
-      installment={item}
-      onPress={handlePaymentPress}
-      onPay={handlePaymentPay}
-      showActions={true}
-    />
-  ), []);
+  const renderPaymentItem = useCallback(
+    ({ item }: { item: PaymentListItem }) => (
+      <PaymentItem
+        installment={item}
+        onPress={handlePaymentPress}
+        onPay={handlePaymentPay}
+        showActions={true}
+      />
+    ),
+    []
+  );
 
   // Event handlers
   const handlePaymentPress = useCallback((installment: ParentInstallmentDto) => {
@@ -375,10 +377,9 @@ const PaymentsScreen: React.FC = () => {
         ListHeaderComponent={ListHeaderComponent}
         contentContainerStyle={styles.listContainer}
         accessibilityLabel="Liste des paiements"
-        windowSize={21} // Increased for better performance
-        maxToRenderPerBatch={5} // Reduced for smoother scrolling
-        updateCellsBatchingPeriod={100} // Increased for stability
-        removeClippedSubviews={false} // Disabled to prevent rendering issues
+
+
+
 
 
       />

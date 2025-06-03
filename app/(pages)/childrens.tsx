@@ -12,16 +12,15 @@ import { School } from '@/services/childrenServices';
 import { useGetAllSchools } from '@/services/schoolsServices';
 import { useGetParentSchools } from '@/services/userServices';
 import { Ionicons } from '@expo/vector-icons';
+import { ListRenderItem } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     Alert,
-    ListRenderItem,
     StyleSheet,
     Text,
     View,
 } from 'react-native';
-
 
 interface Children {
     childId: number;
@@ -36,18 +35,15 @@ interface Children {
     createdOn: string;
     modifiedOn: string | null;
 }
+
 interface ChildrenListItem extends Children {
     id: string | number;
 }
 
 const ChildrensScreen = () => {
-
     const userInfo = useUserInfo();
-
-
     const addChildrenToSystem = useAddChildrenToSystem();
     const getParentSchools = useGetParentSchools();
-
     const getAllSchools = useGetAllSchools();
 
     const {
@@ -75,7 +71,6 @@ const ChildrensScreen = () => {
     const [isAddingChild, setIsAddingChild] = useState(false);
     //#endregion
 
-
     const listData: ChildrenListItem[] = children.map(child => ({
         ...child,
         id: child.childId,
@@ -92,18 +87,14 @@ const ChildrensScreen = () => {
         />
     ), []);
 
-
     const handleChildPress = useCallback((child: Children) => {
-
         router.push({
             pathname: '/(pages)/child-details/[id]',
             params: { id: child.childId }
         });
     }, []);
 
-
     const handleEditChild = useCallback((child: Children) => {
-
         Alert.alert(
             'Modifier l\'enfant',
             `Modifier ${child.firstName} ${child.lastName}?`,
@@ -112,7 +103,6 @@ const ChildrensScreen = () => {
                 {
                     text: 'Modifier',
                     onPress: () => {
-
                         router.push({
                             pathname: '/(pages)/childrens',
                             params: { childId: child.childId.toString(), edit: 'true' }
@@ -122,7 +112,6 @@ const ChildrensScreen = () => {
             ]
         );
     }, []);
-
 
     const handleDeleteChild = useCallback((child: Children) => {
         Alert.alert(
@@ -134,9 +123,7 @@ const ChildrensScreen = () => {
                     text: 'Supprimer',
                     style: 'destructive',
                     onPress: () => {
-
                         console.log('Delete child:', child.childId);
-
                     }
                 }
             ]
@@ -144,8 +131,6 @@ const ChildrensScreen = () => {
     }, []);
 
     const fetchSchools = useCallback(async () => {
-
-
         try {
             setIsLoadingSchools(true);
 
@@ -168,15 +153,12 @@ const ChildrensScreen = () => {
         }
     }, [getAllSchools]);
 
-
     const keyExtractor = useCallback((item: ChildrenListItem) =>
         item.childId.toString(),
         []);
 
-
     const ListHeaderComponent = useCallback(() => (
         <View style={styles.header}>
-            {/* <Text style={styles.title}>Mes Enfants</Text> */}
             {totalCount > 0 && (
                 <Text style={styles.subtitle}>
                     {totalCount} enfant{totalCount > 1 ? 's' : ''} trouvé{totalCount > 1 ? 's' : ''}
@@ -184,7 +166,6 @@ const ChildrensScreen = () => {
             )}
         </View>
     ), [totalCount]);
-
 
     const EmptyIcon = useCallback(() => (
         <Ionicons
@@ -246,7 +227,6 @@ const ChildrensScreen = () => {
         }
     }, [addChildrenToSystem, refresh]);
 
-
     //#region Effects
     useEffect(() => {
         if (showAddModal && schools.length === 0) {
@@ -262,13 +242,17 @@ const ChildrensScreen = () => {
             paddingVertical={true}
             backgroundColor={colors.background.default}
         >
-            <PageHeader title="Liste d'enfants" onBack={handleBack} actions={[
-                {
-                    icon: 'person-add-outline',
-                    onPress: handleAddChild,
-                    color: colors.primary.main,
-                }
-            ]} />
+            <PageHeader
+                title="Liste d'enfants"
+                onBack={handleBack}
+                actions={[
+                    {
+                        icon: 'person-add-outline',
+                        onPress: handleAddChild,
+                        color: colors.primary.main,
+                    }
+                ]}
+            />
             <InfiniteList<ChildrenListItem>
                 data={listData}
                 renderItem={renderChildItem}
@@ -289,11 +273,13 @@ const ChildrensScreen = () => {
                 error={error}
                 onRetry={retry}
                 ListHeaderComponent={ListHeaderComponent}
-                contentContainerStyle={styles.listContainer}
+                estimatedItemSize={120} // Add this for FlashList
                 accessibilityLabel="Liste des enfants"
-                windowSize={10}
-                maxToRenderPerBatch={10}
-                removeClippedSubviews={true}
+            // Remove these FlatList-specific props that don't exist in FlashList:
+            // windowSize={10}
+            // maxToRenderPerBatch={10}
+            // removeClippedSubviews={true}
+            // contentContainerStyle={styles.listContainer} // Handled internally now
             />
             <AddChildModal
                 visible={showAddModal}
@@ -309,10 +295,7 @@ const ChildrensScreen = () => {
 export default ChildrensScreen;
 
 const styles = StyleSheet.create({
-    listContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: spacingY._20,
-    },
+    // Remove listContainer since it's handled internally
     header: {
         paddingVertical: spacingY._20,
         paddingHorizontal: 4,

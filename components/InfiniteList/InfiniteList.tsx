@@ -1,19 +1,18 @@
 // components/List/InfiniteList.tsx
 import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { scaleFont, verticalScale } from '@/utils/stylings';
+import { FlashList, ListRenderItem } from "@shopify/flash-list";
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
-    FlatList,
-    ListRenderItem,
     RefreshControl,
     StyleSheet,
     Text,
     TextInput,
+    TouchableOpacity,
     View,
     ViewStyle
 } from 'react-native';
-import ErrorComponent from '../ErrorComponent/ErrorComponent';
 
 // Generic interfaces for the list component
 export interface ListItem {
@@ -66,16 +65,13 @@ export interface InfiniteListProps<T extends ListItem> {
     showItemSeparator?: boolean;
 
     // Performance props
-    windowSize?: number;
-    maxToRenderPerBatch?: number;
-    updateCellsBatchingPeriod?: number;
-    removeClippedSubviews?: boolean;
+    estimatedItemSize?: number;
 
     // Header/Footer components
     ListHeaderComponent?: React.ComponentType<any> | React.ReactElement | null;
     ListFooterComponent?: React.ComponentType<any> | React.ReactElement | null;
 
-    // FlatList props passthrough
+    // FlashList props passthrough
     horizontal?: boolean;
     numColumns?: number;
 
@@ -105,10 +101,7 @@ export const InfiniteList = <T extends ListItem>({
     contentContainerStyle,
     itemSeparatorHeight = spacingY._10,
     showItemSeparator = true,
-    windowSize = 10,
-    maxToRenderPerBatch = 10,
-    updateCellsBatchingPeriod = 50,
-    removeClippedSubviews = true,
+    estimatedItemSize = 80, // Required for FlashList
     ListHeaderComponent,
     ListFooterComponent,
     horizontal = false,
@@ -116,7 +109,7 @@ export const InfiniteList = <T extends ListItem>({
     accessibilityLabel,
 }: InfiniteListProps<T>) => {
     const [searchText, setSearchText] = useState(searchQuery);
-    const flatListRef = useRef<FlatList<T>>(null);
+    const flashListRef = useRef<FlashList<T>>(null);
     const searchTimeoutRef = useRef<NodeJS.Timeout | number | null>(null);
 
     // Handle search with debouncing
@@ -184,36 +177,45 @@ export const InfiniteList = <T extends ListItem>({
 
     // Empty state component
     const EmptyComponent = useCallback(() => {
-        if (isLoading) {
-            return (
-                <View style={styles.centerContainer}>
-                    <ActivityIndicator
-                        size="large"
-                        color={colors.primary.main}
-                    />
-                    <Text style={styles.loadingText}>Loading...</Text>
-                </View>
-            );
+        // Don't show empty component if we're loading initially
+        if (isLoading && data.length === 0) {
+            return null; // Let FlashList handle the loading state
         }
 
         if (error) {
             return (
-                <ErrorComponent error={error} onRetry={onRetry} />
+                <View style={styles.centerContainer}>
+                    <Text style={styles.errorTitle}>Something went wrong</Text>
+                    <Text style={styles.errorSubtitle}>{error}</Text>
+                    {onRetry && (
+                        <TouchableOpacity
+                            style={styles.retryButton}
+                            onPress={onRetry}
+                        >
+                            <Text style={styles.retryButtonText}>Try Again</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
             );
         }
 
-        return (
-            <View style={styles.centerContainer}>
-                {emptyIcon && (
-                    <View style={styles.emptyIcon}>
-                        {emptyIcon}
-                    </View>
-                )}
-                <Text style={styles.emptyTitle}>{emptyTitle}</Text>
-                <Text style={styles.emptySubtitle}>{emptySubtitle}</Text>
-            </View>
-        );
-    }, [isLoading, error, emptyTitle, emptySubtitle, emptyIcon, onRetry]);
+        // Only show empty state if we're not loading and have no data
+        if (!isLoading && data.length === 0) {
+            return (
+                <View style={styles.centerContainer}>
+                    {emptyIcon && (
+                        <View style={styles.emptyIcon}>
+                            {emptyIcon}
+                        </View>
+                    )}
+                    <Text style={styles.emptyTitle}>{emptyTitle}</Text>
+                    <Text style={styles.emptySubtitle}>{emptySubtitle}</Text>
+                </View>
+            );
+        }
+
+        return null;
+    }, [isLoading, error, emptyTitle, emptySubtitle, emptyIcon, onRetry, data.length]);
 
     // Search input component
     const SearchInput = useCallback(() => {
@@ -246,8 +248,19 @@ export const InfiniteList = <T extends ListItem>({
         <View style={styles.container}>
             <SearchInput />
 
-            <FlatList
-                ref={flatListRef}
+            {/* Show loading overlay during initial load */}
+            {isLoading && data.length === 0 && (
+                <View style={styles.initialLoadingContainer}>
+                    <ActivityIndicator
+                        size="large"
+                        color={colors.primary.main}
+                    />
+                    <Text style={styles.loadingText}>Loading...</Text>
+                </View>
+            )}
+
+            <FlashList
+                ref={flashListRef}
                 data={data}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor || defaultKeyExtractor}
@@ -263,25 +276,24 @@ export const InfiniteList = <T extends ListItem>({
                     </>
                 }
                 ItemSeparatorComponent={ItemSeparator}
-                contentContainerStyle={[
-                    data.length === 0 && styles.emptyContentContainer,
-                    contentContainerStyle,
-                ]}
-                // Performance optimizations
-                windowSize={windowSize}
-                maxToRenderPerBatch={maxToRenderPerBatch}
-                updateCellsBatchingPeriod={updateCellsBatchingPeriod}
-                removeClippedSubviews={removeClippedSubviews}
-                getItemLayout={horizontal ? undefined : (data, index) => ({
-                    length: verticalScale(80) + itemSeparatorHeight, // Estimate based on your item height
-                    offset: (verticalScale(80) + itemSeparatorHeight) * index,
-                    index,
-                })}
+                // FlashList requires estimatedItemSize instead of getItemLayout
+                estimatedItemSize={estimatedItemSize}
                 // Layout props
                 horizontal={horizontal}
                 numColumns={numColumns}
                 // Accessibility
                 accessibilityLabel={accessibilityLabel}
+                // FlashList specific optimizations
+                drawDistance={400}
+                estimatedListSize={{
+                    height: horizontal ? estimatedItemSize : 600,
+                    width: horizontal ? 600 : estimatedItemSize,
+                }}
+                // FlashList padding handling
+                contentContainerStyle={{
+                    paddingHorizontal: contentContainerStyle?.paddingHorizontal || spacingX._20,
+                    paddingBottom: contentContainerStyle?.paddingBottom || spacingY._20,
+                }}
             />
         </View>
     );
@@ -333,6 +345,17 @@ const styles = StyleSheet.create({
     },
 
     // Loading states
+    initialLoadingContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.background.default,
+        zIndex: 1,
+    },
     centerContainer: {
         flex: 1,
         justifyContent: 'center',
