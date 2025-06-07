@@ -561,7 +561,7 @@ export const useGetParentInstallments = () => {
           success: false,
           status: status,
           data: null,
-          error: errorData || "An error occurred while fetching parent installments",
+          error: errorData || "Une erreur s'est produite lors de la récupération des versements parents",
         };
       }
     },
