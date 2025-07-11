@@ -1,7 +1,7 @@
 // hooks/useSchoolsData.ts
 import useUserInfo from '@/hooks/useUserInfo';
 import { School } from '@/services/childrenServices';
-import { useGetParentSchools } from '@/services/userServices';
+import { useGetAllSchools } from '@/services/schoolsServices';
 import { useCallback, useEffect, useState } from 'react';
 
 export interface UseSchoolsDataProps {
@@ -42,7 +42,7 @@ export const useSchoolsData = ({
 }: UseSchoolsDataProps = {}): UseSchoolsDataReturn => {
   // Hooks
   const userInfo = useUserInfo();
-  const getParentSchools = useGetParentSchools();
+  const getParentSchools = useGetAllSchools();
   
   // State
   const [schools, setSchools] = useState<School[]>([]);

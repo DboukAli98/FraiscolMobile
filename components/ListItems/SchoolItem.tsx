@@ -194,30 +194,16 @@ export const SchoolItem: React.FC<SchoolItemProps> = ({
             </View>
 
             {/* Description section */}
-            {school.schoolDescription && (
+            {/* {school.schoolDescription && (
                 <View style={styles.descriptionSection}>
                     <Text style={styles.description} numberOfLines={3}>
                         {school.schoolDescription}
                     </Text>
                 </View>
-            )}
+            )} */}
 
             {/* Footer with additional info */}
-            <View style={styles.footer}>
-                <View style={styles.footerItem}>
-                    <Text style={styles.footerLabel}>Enfants inscrits:</Text>
-                    <Text style={styles.footerValue}>
-                        {school.childrens?.length || 0}
-                    </Text>
-                </View>
 
-                <View style={styles.footerItem}>
-                    <Text style={styles.footerLabel}>Créé le:</Text>
-                    <Text style={styles.footerValue}>
-                        {formatDate(school.createdOn)}
-                    </Text>
-                </View>
-            </View>
         </Card>
     );
 };

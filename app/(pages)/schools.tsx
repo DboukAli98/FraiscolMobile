@@ -141,7 +141,7 @@ const SchoolsScreen = () => {
             paddingVertical={true}
             backgroundColor={colors.background.default}
         >
-            <PageHeader title="Vos Écoles" onBack={handleBack} />
+            <PageHeader title="Écoles" onBack={handleBack} />
             <InfiniteList<SchoolListItem>
                 data={listData}
                 renderItem={renderSchoolItem}

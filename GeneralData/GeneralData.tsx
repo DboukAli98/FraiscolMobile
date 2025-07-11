@@ -22,13 +22,13 @@ export const QuickActionData = [
         img: require("../assets/images/static-images/MerchandiseIcon.png"),
         route: "/merchandises",
     },
-    {
-        id: 4,
-        name: "payment-history",
-        label: "Historique des paiements",
-        img: require("../assets/images/static-images/TransactionHistoryIcon.png"),
-        route: "/paymenthistory",
-    },
+    // {
+    //     id: 4,
+    //     name: "payment-history",
+    //     label: "Historique des paiements",
+    //     img: require("../assets/images/static-images/TransactionHistoryIcon.png"),
+    //     route: "/paymenthistory",
+    // },
 
 ]
 
