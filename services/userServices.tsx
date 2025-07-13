@@ -176,6 +176,61 @@ export interface GetParentInstallmentFilterDataResponse {
   message: string | null;
 }
 
+
+interface GetRecentPaymentTransactionsParams {
+  parentId: number;
+  timePeriod?: string; // 'week', 'month', 'all'
+  topCount?: number;
+}
+
+export interface RecentPaymentTransactionDto {
+  paymentTransactionId: number;
+  fK_InstallmentId: number;
+  amountPaid: number;
+  paidDate: string;
+  paymentMethod: string;
+  transactionReference: string;
+  fK_StatusId: number;
+  createdOn: string;
+  modifiedOn: string | null;
+  transactionMapId: string | null;
+  statusName: string;
+  installmentAmount: number;
+  dueDate: string;
+  isPaid: boolean;
+  childId: number;
+  childFirstName: string;
+  childLastName: string;
+  gradeName: string;
+  schoolName: string;
+  daysAgo: number;
+  statusDescription: string;
+  childFullName: string;
+  formattedAmount: string;
+  relativeTime: string;
+}
+
+export interface PaymentDateRange {
+  from: string | null;
+  to: string | null;
+}
+
+export interface PaymentTransactionsSummary {
+  totalTransactions: number;
+  totalAmountPaid: number;
+  timePeriod: string;
+  parentId: number;
+  dateRange: PaymentDateRange;
+}
+
+export interface GetRecentPaymentTransactionsResponse {
+  data: RecentPaymentTransactionDto[];
+  summary: PaymentTransactionsSummary;
+  status: string;
+  error: any | null;
+  message: string;
+}
+
 //#endregion
 
 
@@ -766,3 +821,54 @@ export const useGetGradeSectionsForFilter = () => {
   return getGradeSectionsForFilter;
 };
 
+export const useGetParentRecentTransactions = () => {
+  const api = useApiInstance({
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
+    },
+  });
+
+  const getParentRecentTransactions = useCallback(
+    async ({
+      parentId,
+      timePeriod = "week",
+      topCount = 5,
+    }: GetRecentPaymentTransactionsParams): Promise<ApiResponse<GetRecentPaymentTransactionsResponse>> => {
+      const params = new URLSearchParams({
+        ParentId: parentId.toString(),
+        TimePeriod: timePeriod,
+        TopCount: topCount.toString(),
+      });
+      console.log("parent idddd ::: ", parentId)
+
+      try {
+        const response = await api.get<GetRecentPaymentTransactionsResponse>(
+          `api/Parents/GetParentRecentTrx?${params.toString()}`
+        );
+
+        return {
+          success: true,
+          status: response.status,
+          data: response.data,
+          error: null,
+        };
+      } catch (error: any) {
+        const status = error.response ? error.response.status : 0;
+        const errorData = error.response ? error.response.data : null;
+
+        console.error("Get parent recent transactions error:", error);
+
+        return {
+          success: false,
+          status: status,
+          data: null,
+          error: errorData || "An error occurred while fetching recent transactions",
+        };
+      }
+    },
+    [api]
+  );
+
+  return getParentRecentTransactions;
+};
