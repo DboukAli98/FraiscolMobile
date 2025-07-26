@@ -78,7 +78,7 @@ const SettingsScreen = () => {
   };
 
   const handlePersonalInfo = () => {
-    router.push('/(pages)/edit-profile');
+    router.push('/(pages)/personal-info');
   };
 
   const handleLogout = async () => {
@@ -192,7 +192,7 @@ const SettingsScreen = () => {
           icon="card-outline"
           title="Méthodes de paiement"
           subtitle="Cartes bancaires, comptes mobiles"
-          onPress={() => console.log('Payment methods')}
+          onPress={() => router.push('/(pages)/payment-methods')}
         />
 
         <SettingItem
@@ -282,7 +282,7 @@ const SettingsScreen = () => {
           onPress={() => {
             Alert.alert(
               'À propos de FraiscolMobile',
-              'Version 1.0.0\n\nApplication de gestion des frais scolaires\n\n© 2024 Tous droits réservés',
+              'Version 1.0.0\n\nApplication de gestion des frais scolaires\n\n© 2025 Tous droits réservés',
               [{ text: 'OK' }]
             );
           }}
