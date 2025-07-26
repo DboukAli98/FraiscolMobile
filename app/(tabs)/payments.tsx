@@ -4,6 +4,7 @@ import { PrimaryButton, SecondaryButton } from '@/components/Button/CustomPressa
 import { Card, CardBody } from '@/components/Card/CardComponent';
 import { InfiniteList } from '@/components/InfiniteList/InfiniteList';
 import { PaymentItem } from '@/components/ListItems/PaymentItem';
+import { PaymentDetailModal } from '@/components/PaymentDetailModal/PaymentDetailModal';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { colors, spacingX, spacingY } from '@/constants/theme';
 import { usePaymentsData } from '@/hooks/usePaymentsData';
@@ -53,6 +54,12 @@ const PaymentsScreen: React.FC = () => {
   const [showChildPicker, setShowChildPicker] = useState(false);
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
   const [showGradePicker, setShowGradePicker] = useState(false);
+
+  const [selectedPayment, setSelectedPayment] = useState<ParentInstallmentDto | null>(null);
+  const [showPaymentDetailModal, setShowPaymentDetailModal] = useState(false);
+
+
+
 
   // API hooks
   const getChildrenForFilter = useGetChildrenForFilter();
@@ -156,29 +163,33 @@ const PaymentsScreen: React.FC = () => {
 
   // Event handlers
   const handlePaymentPress = useCallback((installment: ParentInstallmentDto) => {
-    Alert.alert(
-      'Détails du paiement',
-      `Installment ID: ${installment.installmentId}\nEnfant: ${installment.childName}\nMontant: ${formatCurrency(installment.amount)}`,
-      [{ text: 'OK' }]
-    );
-  }, [formatCurrency]);
+    setSelectedPayment(installment);
+    setShowPaymentDetailModal(true);
+  }, []);
 
   const handlePaymentPay = useCallback((installment: ParentInstallmentDto) => {
     Alert.alert(
-      'Payer maintenant',
+      'Confirmer le paiement',
       `Payer ${formatCurrency(installment.amount)} pour ${installment.childName}?`,
       [
         { text: 'Annuler', style: 'cancel' },
         {
-          text: 'Payer',
+          text: 'Continuer',
           onPress: () => {
             console.log('Payment initiated for:', installment.installmentId);
-            // Implement payment logic here
+            // TODO: Implement your Airtel payment logic here
+            // Example:
+            // initiateAirtelPayment(installment);
           }
         }
       ]
     );
   }, [formatCurrency]);
+
+  const handleClosePaymentDetailModal = useCallback(() => {
+    setShowPaymentDetailModal(false);
+    setSelectedPayment(null);
+  }, []);
 
   const handleOpenFilterModal = useCallback(() => {
     setTempFilters(filters);
@@ -592,6 +603,13 @@ const PaymentsScreen: React.FC = () => {
           ))}
         </View>
       </BottomModal>
+
+      <PaymentDetailModal
+        visible={showPaymentDetailModal}
+        onClose={handleClosePaymentDetailModal}
+        installment={selectedPayment}
+        onPay={handlePaymentPay}
+      />
 
     </ScreenView>
   );

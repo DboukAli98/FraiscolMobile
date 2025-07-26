@@ -90,6 +90,23 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
         }
     };
 
+    const getStatusName = (statusName: string) => {
+        switch (statusName.toLowerCase()) {
+            case 'processed':
+            case 'completed':
+            case 'success':
+                return "Payé";
+            case 'pending':
+            case 'processing':
+                return "En attente";
+            case 'failed':
+            case 'error':
+                return "Échoué";
+            default:
+                return "stall";
+        }
+    }
+
     const handlePress = () => {
         onPress?.(transaction);
     };
@@ -125,7 +142,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
                         </Text>
                         <View style={[styles.compactStatus, { backgroundColor: getStatusColor() }]}>
                             <Text style={styles.compactStatusText}>
-                                {transaction.statusName}
+                                {getStatusName(transaction.statusName)}
                             </Text>
                         </View>
                     </View>
