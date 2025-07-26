@@ -22,7 +22,7 @@ const useApiInstance = ({
   const dispatch = useDispatch<AppDispatch>();
   const token = useSelector((state: RootState) => state.auth.token);
 
-  const timeout = parseInt(process.env.EXPO_API_TIMEOUT ?? "10000");
+  const timeout = parseInt(process.env.EXPO_API_TIMEOUT ?? "15000"); // Increased timeout
 
   //#endregion
 
@@ -35,6 +35,11 @@ const useApiInstance = ({
       responseType: responseType,
       withCredentials: withCredentials,
       timeout: timeout,
+      // Add retry configuration
+      validateStatus: (status) => {
+        // Consider 2xx and 3xx as successful
+        return status >= 200 && status < 400;
+      },
     });
 
     //#region Request Interceptor
@@ -44,10 +49,17 @@ const useApiInstance = ({
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+
+        // Add request logging
+        console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        if (config.params) {
+          console.log('📋 Request Params:', config.params);
+        }
+
         return config;
       },
       (error) => {
-        console.error("Request interceptor error:", error);
+        console.error('❌ Request Interceptor Error:', error);
         return Promise.reject(error);
       }
     );
@@ -58,21 +70,47 @@ const useApiInstance = ({
 
     const responseInterceptorId = instance.interceptors.response.use(
       (response) => {
+        // Log successful responses
+        console.log(`✅ API Response: ${response.status} ${response.config.url}`);
         return response;
       },
       (error) => {
+        // Enhanced error logging
+        console.error('❌ Response Interceptor Error:', {
+          message: error.message,
+          code: error.code,
+          status: error.response?.status,
+          url: error.config?.url,
+          data: error.response?.data,
+        });
+
+        // Handle specific error cases
+        if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+          console.error('🌐 Network connectivity issue detected');
+          // You might want to show a toast or handle this globally
+        }
+
+        if (error.code === 'ECONNABORTED') {
+          console.error('⏱️ Request timeout detected');
+        }
+
         if (
           error.response &&
           error.response.status === HttpStatusCode.Unauthorized
         ) {
+          console.log('🔐 Unauthorized access - clearing credentials');
           // Clear credentials from Redux store (this will trigger redux-persist to clear AsyncStorage)
           dispatch(clearCredentials());
 
           // Navigate to login screen using Expo Router
           router.replace("/(auth)/login");
-
         }
-        console.error("Response interceptor error:", error);
+
+        // For 5xx errors, you might want to implement retry logic
+        if (error.response?.status >= 500) {
+          console.error('🔥 Server error detected:', error.response.status);
+        }
+
         return Promise.reject(error);
       }
     );
@@ -84,7 +122,7 @@ const useApiInstance = ({
     (instance as any)._responseInterceptorId = responseInterceptorId;
 
     return instance;
-  }, [headers, responseType, withCredentials, dispatch, token]);
+  }, [headers, responseType, withCredentials, dispatch, token, timeout]);
 
   useEffect(() => {
     return () => {

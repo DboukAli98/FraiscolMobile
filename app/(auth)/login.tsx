@@ -19,7 +19,7 @@ import {
 import { useDispatch } from 'react-redux';
 
 export default function LoginScreen() {
-  const [countryCode, setCountryCode] = useState('242'); 
+  const [countryCode, setCountryCode] = useState('242');
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [civilId, setCivilId] = useState('');
@@ -43,7 +43,7 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
-      const {success , data , error} = await authenticate({
+      const { success, data, error } = await authenticate({
         countryCode,
         mobileNumber: mobileNumber.trim(),
         password: password.trim(),
@@ -54,7 +54,7 @@ export default function LoginScreen() {
       if (success && data) {
         // Store credentials in Redux (will be persisted)
         dispatch(setCredentials({
-          token:data.token,
+          token: data.token,
           userId: data.userId,
         }));
 
@@ -63,7 +63,7 @@ export default function LoginScreen() {
       } else {
         console.error('Login failed:', error);
         Alert.alert(
-          'Login Failed', 
+          'Login Failed',
           error?.message || 'Invalid credentials. Please try again.'
         );
       }
@@ -75,20 +75,20 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to your account</Text>
+            <Text style={styles.title}>Bienvenue</Text>
+            <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
           </View>
 
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Country Code</Text>
+              <Text style={styles.label}>Code du pays</Text>
               <TextInput
                 style={styles.input}
                 value={countryCode}
@@ -99,7 +99,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Mobile Number</Text>
+              <Text style={styles.label}>Numéro de portable</Text>
               <TextInput
                 style={styles.input}
                 value={mobileNumber}
@@ -111,7 +111,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Civil ID (Optional)</Text>
+              <Text style={styles.label}>{"Pièce d'identité civile (facultatif)"}</Text>
               <TextInput
                 style={styles.input}
                 value={civilId}
@@ -122,7 +122,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>Mot de passe</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[styles.input, styles.passwordInput]}
@@ -151,13 +151,13 @@ export default function LoginScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#ffffff" />
               ) : (
-                <Text style={styles.buttonText}>Sign In</Text>
+                <Text style={styles.buttonText}>Se connecter</Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                Dont have an account?{' '}
+                {"Vous n'avez pas de compte ?"}{' '}
                 {/* <Link href="/(auth)/register" style={styles.link}>
                   Sign up
                 </Link> */}

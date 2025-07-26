@@ -1,3 +1,4 @@
+import { GetParentDetailsParams, GetParentDetailsResponse, UpdateParentParams, UpdateParentResponse } from "@/models/ParentDetailsInterfaces";
 import { router } from "expo-router";
 import { useCallback } from "react";
 import useApiInstance from "./apiClient";
@@ -871,4 +872,119 @@ export const useGetParentRecentTransactions = () => {
   );
 
   return getParentRecentTransactions;
+};
+
+
+export const useGetParentDetails = () => {
+  const api = useApiInstance({
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
+    },
+  });
+
+  const getParentDetails = useCallback(
+    async ({
+      parentId
+    }: GetParentDetailsParams): Promise<ApiResponse<GetParentDetailsResponse>> => {
+      const params = new URLSearchParams({
+        ParentId: parentId.toString(),
+      }).toString();
+
+      try {
+        const response = await api.get<GetParentDetailsResponse>(
+          `/api/Parents/GetSingleParentDetails?${params}`
+        );
+
+        return {
+          success: true,
+          status: response.status,
+          data: response.data,
+          error: null,
+        };
+      } catch (error: any) {
+        const status = error.response ? error.response.status : 0;
+        const errorData = error.response ? error.response.data : null;
+
+        console.error("Get parent details error:", error);
+
+        return {
+          success: false,
+          status: status,
+          data: null,
+          error: errorData || "An error occurred while fetching parent details",
+        };
+      }
+    },
+    [api]
+  );
+
+  return getParentDetails;
+};
+
+
+export const useUpdateParent = () => {
+  const api = useApiInstance({
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
+    },
+  });
+
+  const updateParent = useCallback(
+    async ({
+      parentId,
+      firstName,
+      lastName,
+      email = "",
+      civilId = "",
+      fatherName = "",
+      countryCode,
+      phoneNumber,
+      statusId
+    }: UpdateParentParams): Promise<ApiResponse<UpdateParentResponse>> => {
+      const requestData = {
+        parentId,
+        firstName,
+        lastName,
+        email,
+        civilId,
+        fatherName,
+        countryCode,
+        phoneNumber,
+        statusId
+      };
+
+
+
+      try {
+        const response = await api.put<UpdateParentResponse>(
+          "/api/Parents/UpdateParent",
+          requestData
+        );
+
+
+
+        return {
+          success: true,
+          status: response.status,
+          data: response.data,
+          error: null,
+        };
+      } catch (error: any) {
+        const status = error.response ? error.response.status : 0;
+        const errorData = error.response ? error.response.data : null;
+
+        return {
+          success: false,
+          status: status,
+          data: null,
+          error: errorData || "An error occurred while updating parent",
+        };
+      }
+    },
+    [api]
+  );
+
+  return updateParent;
 };

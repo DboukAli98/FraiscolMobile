@@ -1,6 +1,7 @@
 // app/(tabs)/settings.tsx
 import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { colors, spacingX, spacingY } from '@/constants/theme';
+import { useParentProfile } from '@/hooks/useParentProfile';
 import useUserInfo from '@/hooks/useUserInfo';
 import { useLogout } from '@/services/userServices';
 import { scaleFont } from '@/utils/stylings';
@@ -62,6 +63,7 @@ const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
 
 const SettingsScreen = () => {
   const userInfo = useUserInfo();
+  const { parentData } = useParentProfile();
   const logoutUser = useLogout();
 
   // Settings state
@@ -71,6 +73,14 @@ const SettingsScreen = () => {
   const [autoBackup, setAutoBackup] = useState(true);
 
   // Handlers
+  const handleEditProfile = () => {
+    router.push('/(pages)/edit-profile');
+  };
+
+  const handlePersonalInfo = () => {
+    router.push('/(pages)/edit-profile');
+  };
+
   const handleLogout = async () => {
     Alert.alert(
       'Se déconnecter',
@@ -121,12 +131,26 @@ const SettingsScreen = () => {
   };
 
   const getInitials = () => {
+    if (parentData?.firstName && parentData?.lastName) {
+      return `${parentData.firstName.charAt(0)}${parentData.lastName.charAt(0)}`.toUpperCase();
+    }
     const name = userInfo?.name || 'User';
     const names = name.split(' ');
     if (names.length >= 2) {
       return `${names[0].charAt(0)}${names[1].charAt(0)}`.toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
+  };
+
+  const getDisplayName = () => {
+    if (parentData?.firstName && parentData?.lastName) {
+      return `${parentData.firstName} ${parentData.lastName}`;
+    }
+    return userInfo?.name || 'Utilisateur';
+  };
+
+  const getDisplayEmail = () => {
+    return parentData?.email || userInfo?.email || 'email@example.com';
   };
 
   return (
@@ -137,11 +161,11 @@ const SettingsScreen = () => {
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{getInitials()}</Text>
           </View>
-          <Text style={styles.profileName}>{userInfo?.name || 'Utilisateur'}</Text>
-          <Text style={styles.profileEmail}>{userInfo?.email || 'email@example.com'}</Text>
+          <Text style={styles.profileName}>{getDisplayName()}</Text>
+          <Text style={styles.profileEmail}>{getDisplayEmail()}</Text>
           <TouchableOpacity
             style={styles.editProfileButton}
-            onPress={() => console.log('Edit profile')}
+            onPress={handleEditProfile}
           >
             <Text style={styles.editProfileText}>Modifier le profil</Text>
           </TouchableOpacity>
@@ -154,7 +178,7 @@ const SettingsScreen = () => {
           icon="person-outline"
           title="Informations personnelles"
           subtitle="Nom, email, téléphone"
-          onPress={() => console.log('Personal info')}
+          onPress={handlePersonalInfo}
         />
 
         <SettingItem
@@ -196,42 +220,12 @@ const SettingsScreen = () => {
           }
         />
 
-        {/* <SettingItem
-          icon="finger-print-outline"
-          title="Authentification biométrique"
-          subtitle="Touch ID / Face ID"
-          showArrow={false}
-          rightComponent={
-            <Switch
-              value={biometricEnabled}
-              onValueChange={setBiometricEnabled}
-              trackColor={{ false: colors.border?.light || '#e1e5e9', true: colors.primary.main }}
-              thumbColor={biometricEnabled ? colors.text.white : colors.text.secondary}
-            />
-          }
-        /> */}
-
         <SettingItem
           icon="language-outline"
           title="Langue"
           subtitle="Français"
           onPress={() => console.log('Language settings')}
         />
-
-        {/* <SettingItem
-          icon="moon-outline"
-          title="Mode sombre"
-          subtitle="Apparence de l'application"
-          showArrow={false}
-          rightComponent={
-            <Switch
-              value={darkMode}
-              onValueChange={setDarkMode}
-              trackColor={{ false: colors.border?.light || '#e1e5e9', true: colors.primary.main }}
-              thumbColor={darkMode ? colors.text.white : colors.text.secondary}
-            />
-          }
-        /> */}
 
         {/* Data & Privacy */}
         <SectionHeader title="Données et confidentialité" />
@@ -281,18 +275,6 @@ const SettingsScreen = () => {
           onPress={handleContactSupport}
         />
 
-        {/* <SettingItem
-          icon="star-outline"
-          title="Évaluer l'application"
-          onPress={() => {
-            // You can replace with actual store URLs
-            const storeUrl = Platform.OS === 'ios'
-              ? 'https://apps.apple.com/app/id123456789'
-              : 'https://play.google.com/store/apps/details?id=com.fraiscolmobile.fraiscol';
-            Linking.openURL(storeUrl);
-          }}
-        /> */}
-
         <SettingItem
           icon="information-circle-outline"
           title="À propos"
@@ -321,14 +303,6 @@ const SettingsScreen = () => {
           onPress={handleLogout}
           iconColor={colors.warning.main}
         />
-
-        {/* <SettingItem
-          icon="trash-outline"
-          title="Supprimer le compte"
-          onPress={handleDeleteAccount}
-          iconColor={colors.error.main}
-          showArrow={false}
-        /> */}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
