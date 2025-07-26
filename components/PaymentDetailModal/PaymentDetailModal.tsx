@@ -95,7 +95,7 @@ export const PaymentDetailModal: React.FC<PaymentDetailModalProps> = ({
             visible={visible}
             onClose={onClose}
             title="Détails du paiement"
-            height={SCREEN_HEIGHT * 0.78}
+            height={SCREEN_HEIGHT * 0.7}
             enableDragToExpand={true}
         >
             <View style={styles.container}>
@@ -239,7 +239,8 @@ export const PaymentDetailModal: React.FC<PaymentDetailModalProps> = ({
                         <PrimaryButton
                             title="Fermer"
                             onPress={onClose}
-                            style={styles.singleButton}
+                            style={StyleSheet.flatten([styles.singleButton, { backgroundColor: colors.error.main }])}
+
                         />
                     )}
                 </View>
@@ -251,7 +252,7 @@ export const PaymentDetailModal: React.FC<PaymentDetailModalProps> = ({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: spacingY._10,
+        paddingTop: spacingY._20,
     },
 
     // Header
@@ -259,7 +260,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: spacingY._10,
+        marginBottom: spacingY._20,
     },
     childInfo: {
         flex: 1,
@@ -347,7 +348,7 @@ const styles = StyleSheet.create({
     // Actions
     actions: {
         flexDirection: 'row',
-        gap: spacingX._20,
+        gap: spacingX._30,
     },
     closeButton: {
         flex: 1,
