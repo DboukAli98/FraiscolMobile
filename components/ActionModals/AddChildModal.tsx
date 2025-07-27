@@ -205,7 +205,7 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
             subtitle="Remplissez les informations de l'enfant"
             enableDragToExpand={false}
             enableSwipeDown={false} // Disable swipe down to prevent interference
-            
+
         >
             <KeyboardAvoidingView
                 style={styles.container}
@@ -379,16 +379,16 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        maxHeight: '100%', 
-        marginTop:spacingY._10
+        maxHeight: '100%',
+        marginTop: spacingY._10
     },
     scrollView: {
         flex: 1,
-        maxHeight: '100%', 
+        maxHeight: '100%',
     },
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: spacingY._10, 
+        paddingBottom: spacingY._10,
     },
     formContainer: {
         paddingBottom: spacingY._30,

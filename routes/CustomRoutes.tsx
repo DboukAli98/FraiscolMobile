@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CustomRoutes = ({
   state,
@@ -16,9 +17,20 @@ const CustomRoutes = ({
   activeTintColor = '#007AFF',
   inactiveTintColor = '#8e8e93',
   backgroundColor = '#fff',
-} : CustomTabBarProps) => {
+}: CustomTabBarProps) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={[styles.container, { backgroundColor }]}>
+    <View style={[
+      styles.container,
+      {
+        backgroundColor,
+        // Add safe area padding for Android navigation bar
+        paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 12) : Math.max(insets.bottom, 8),
+        // Add extra height on Android to accommodate navigation bar
+        minHeight: Platform.OS === 'android' ? 72 + Math.max(insets.bottom, 12) : 64,
+      }
+    ]}>
       {state.routes.map((route, idx) => {
         const { options } = descriptors[route.key];
         const label = options.title ?? options.tabBarLabel ?? route.name;
@@ -49,6 +61,7 @@ const CustomRoutes = ({
             key={route.key}
             onPress={onPress}
             style={styles.tab}
+            activeOpacity={0.7}
           >
             {IconComponent}
             <Text style={[styles.label, { color }]}>
@@ -66,17 +79,30 @@ export default CustomRoutes;
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 12,
+    paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.background.paper,
+    borderTopColor: colors.border?.light || '#e1e5e9',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    // Add minimum touch target
+    minHeight: 56,
   },
   label: {
     fontSize: 12,
-    marginTop: 2,
+    marginTop: 4,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

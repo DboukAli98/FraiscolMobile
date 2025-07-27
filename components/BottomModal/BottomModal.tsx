@@ -1,4 +1,4 @@
-// components/ui/BottomModal.tsx
+// components/BottomModal/BottomModal.tsx
 import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { scale, scaleFont, verticalScale } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ import {
     View,
     ViewStyle
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -41,12 +42,12 @@ interface BottomModalProps {
     // Behavior options
     closeOnBackdropPress?: boolean;
     enableSwipeDown?: boolean;
-    enableDragToExpand?: boolean; // New prop for drag to expand
+    enableDragToExpand?: boolean;
     animationDuration?: number;
 
     // Callbacks
-    onExpand?: () => void; // Called when modal expands to full height
-    onCollapse?: () => void; // Called when modal collapses back
+    onExpand?: () => void;
+    onCollapse?: () => void;
 
     // Accessibility
     accessibilityLabel?: string;
@@ -71,7 +72,7 @@ export const BottomModal: React.FC<BottomModalProps> = ({
     titleStyle,
     closeOnBackdropPress = true,
     enableSwipeDown = true,
-    enableDragToExpand = true, // Default to true
+    enableDragToExpand = true,
     animationDuration = 300,
     onExpand,
     onCollapse,
@@ -82,21 +83,22 @@ export const BottomModal: React.FC<BottomModalProps> = ({
     const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
     const backdropAnim = useRef(new Animated.Value(0)).current;
     const panY = useRef(new Animated.Value(0)).current;
+    const insets = useSafeAreaInsets();
 
     // Track if modal is expanded
     const [isExpanded, setIsExpanded] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
-    // Calculate modal heights
+    // Calculate modal heights with safe area consideration
     const getInitialHeight = () => {
-        if (height === 'full') return SCREEN_HEIGHT;
-        if (height === 'auto') return SCREEN_HEIGHT * 0.6; // Default 60% of screen
+        if (height === 'full') return SCREEN_HEIGHT - insets.top;
+        if (height === 'auto') return SCREEN_HEIGHT * 0.6;
         if (typeof height === 'number') return height;
         return SCREEN_HEIGHT * 0.6;
     };
 
     const initialHeight = getInitialHeight();
-    const expandedHeight = SCREEN_HEIGHT - (Platform.OS === 'ios' ? 50 : 80); // Leave some space at top
+    const expandedHeight = SCREEN_HEIGHT - insets.top - (Platform.OS === 'ios' ? 50 : 80);
 
     // Current modal height based on expanded state
     const currentHeight = isExpanded ? expandedHeight : initialHeight;
@@ -232,13 +234,6 @@ export const BottomModal: React.FC<BottomModalProps> = ({
         });
     };
 
-    // Public methods that can be called from parent
-    const modalMethods = {
-        expand: expandModal,
-        collapse: collapseModal,
-        close: closeModal,
-    };
-
     useEffect(() => {
         if (visible) {
             slideAnim.setValue(SCREEN_HEIGHT);
@@ -256,7 +251,7 @@ export const BottomModal: React.FC<BottomModalProps> = ({
             transparent
             visible={visible}
             animationType="none"
-            statusBarTranslucent
+            statusBarTranslucent={Platform.OS === 'android'}
             accessibilityLabel={accessibilityLabel}
         >
             <View style={styles.container}>
@@ -281,6 +276,8 @@ export const BottomModal: React.FC<BottomModalProps> = ({
                         {
                             backgroundColor,
                             height: currentHeight,
+                            // Add bottom padding for Android navigation bar
+                            paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 16) : insets.bottom,
                             transform: [
                                 { translateY: slideAnim },
                                 { translateY: panY },
@@ -300,7 +297,7 @@ export const BottomModal: React.FC<BottomModalProps> = ({
                             ]} />
                             {enableDragToExpand && (
                                 <Text style={styles.dragHint}>
-                                    {isExpanded ? 'Drag down to collapse' : 'Drag up to expand'}
+                                    {isExpanded ? 'Glissez vers le bas pour réduire' : 'Glissez vers le haut pour agrandir'}
                                 </Text>
                             )}
                         </View>
@@ -323,7 +320,7 @@ export const BottomModal: React.FC<BottomModalProps> = ({
                                     <TouchableOpacity
                                         style={styles.expandButton}
                                         onPress={isExpanded ? collapseModal : expandModal}
-                                        accessibilityLabel={isExpanded ? "Collapse modal" : "Expand modal"}
+                                        accessibilityLabel={isExpanded ? "Réduire le modal" : "Agrandir le modal"}
                                     >
                                         <Ionicons
                                             name={isExpanded ? "chevron-down" : "chevron-up"}
@@ -337,7 +334,7 @@ export const BottomModal: React.FC<BottomModalProps> = ({
                                     <TouchableOpacity
                                         style={styles.closeButton}
                                         onPress={closeModal}
-                                        accessibilityLabel="Close modal"
+                                        accessibilityLabel="Fermer le modal"
                                         accessibilityRole="button"
                                     >
                                         <Ionicons
@@ -379,7 +376,7 @@ export const QuickBottomModal: React.FC<QuickModalProps> = ({
             case 'large':
                 return SCREEN_HEIGHT * 0.8;
             case 'expandable':
-                return SCREEN_HEIGHT * 0.4; // Start smaller, allow expansion
+                return SCREEN_HEIGHT * 0.4;
             default:
                 return SCREEN_HEIGHT * 0.5;
         }
@@ -396,7 +393,7 @@ export const QuickBottomModal: React.FC<QuickModalProps> = ({
     );
 };
 
-// Action Sheet Modal (unchanged)
+// Action Sheet Modal
 interface ActionSheetItem {
     id: string;
     title: string;
@@ -423,7 +420,7 @@ export const ActionSheetModal: React.FC<ActionSheetModalProps> = ({
     subtitle,
     items,
     showCancel = true,
-    cancelText = 'Cancel',
+    cancelText = 'Annuler',
 }) => {
     const handleItemPress = (item: ActionSheetItem) => {
         if (!item.disabled) {
@@ -440,7 +437,7 @@ export const ActionSheetModal: React.FC<ActionSheetModalProps> = ({
             subtitle={subtitle}
             height="auto"
             showCloseButton={false}
-            enableDragToExpand={false} // Disable expansion for action sheets
+            enableDragToExpand={false}
         >
             <View style={styles.actionSheet}>
                 {items.map((item) => (
@@ -570,10 +567,10 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         paddingHorizontal: spacingX._20,
-        paddingBottom: spacingY._20,
+        paddingBottom: spacingY._10, // Reduced padding since we're adding paddingBottom to modal
     },
 
-    // Action Sheet Styles (unchanged)
+    // Action Sheet Styles
     actionSheet: {
         paddingBottom: spacingY._10,
     },
