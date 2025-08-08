@@ -28,6 +28,8 @@ export const PaymentDetailModal: React.FC<PaymentDetailModalProps> = ({
 }) => {
     if (!installment) return null;
 
+    console.log("installment :: ", JSON.stringify(installment))
+
     // Format currency
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('fr-FR', {

@@ -9,6 +9,7 @@ import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { colors, spacingX, spacingY } from '@/constants/theme';
 import { usePaymentsData } from '@/hooks/usePaymentsData';
 import useUserInfo from '@/hooks/useUserInfo';
+import { useInitiateAirtelCollection } from '@/services/paymentServices';
 import {
   FilterOption,
   ParentInstallmentDto,
@@ -59,12 +60,21 @@ const PaymentsScreen: React.FC = () => {
   const [showPaymentDetailModal, setShowPaymentDetailModal] = useState(false);
 
 
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentInstallment, setPaymentInstallment] = useState<ParentInstallmentDto | null>(null);
+
+
+
+
 
 
   // API hooks
   const getChildrenForFilter = useGetChildrenForFilter();
   const getSchoolsForFilter = useGetSchoolsForFilter();
   const getGradeSectionsForFilter = useGetGradeSectionsForFilter();
+
+  const initiateAirtelCollection = useInitiateAirtelCollection();
 
   // Payments data hook
   const {
@@ -148,6 +158,93 @@ const PaymentsScreen: React.FC = () => {
     }).format(amount);
   }, []);
 
+  // Generate Payment Reference
+  const generatePaymentReference = useCallback((installmentId: number): string => {
+    // Generate a 6-digit number based on installment ID and timestamp
+    const timestamp = Date.now();
+    const combined = parseInt(installmentId.toString() + timestamp.toString().slice(-4));
+    const sixDigits = (combined % 1000000).toString().padStart(6, '0');
+
+    return `PAYSF${sixDigits}`;
+  }, []);
+
+  const handleInitiateAirtelPayment = useCallback(async (installment: ParentInstallmentDto) => {
+    console.log("ttetete")
+    console.log("payment instt ::: " + JSON.stringify(installment) + " pphooh ::: " + userInfo?.phoneNumber)
+    if (!installment || !userInfo?.phoneNumber) return;
+
+    setIsProcessingPayment(true);
+
+    try {
+
+      const reference = generatePaymentReference(installment?.installmentId);
+
+
+      // const totalAmount = paymentInstallment.amount + (paymentInstallment.lateFee || 0);
+      const totalAmount = installment.amount;
+
+
+      const callbackUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/Payments/callback`;
+
+      console.log('🚀 Initiating Airtel payment:', {
+        reference,
+        phone: userInfo.phoneNumber,
+        amount: totalAmount,
+        installmentId: installment.installmentId,
+        childName: installment.childName,
+      });
+
+      const response = await initiateAirtelCollection({
+        InstallmentId: installment.installmentId,
+        reference,
+        subscriberMsisdn: userInfo.phoneNumber,
+        amount: totalAmount,
+        callbackUrl,
+      });
+
+      if (response.success && response.data) {
+        console.log('✅ Payment initiated successfully:', response.data);
+
+        setShowPaymentModal(false);
+        setPaymentInstallment(null);
+
+        Alert.alert(
+          'Paiement initié',
+          `Un SMS vous sera envoyé pour confirmer le paiement de ${formatCurrency(totalAmount)} pour ${installment.childName}.\n\nRéférence: ${response.data.reference}`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Optionally refresh the payments list
+                refresh();
+              }
+            }
+          ]
+        );
+      } else {
+        console.error('❌ Payment initiation failed:', response.error);
+
+        const errorMessage = response.error?.message || response.error || 'Échec de l\'initiation du paiement';
+        Alert.alert(
+          'Erreur de paiement',
+          `Impossible d'initier le paiement: ${errorMessage}\n\nVeuillez réessayer.`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error: any) {
+      console.error('💥 Payment flow error:', error);
+
+      Alert.alert(
+        'Erreur inattendue',
+        error.message || 'Une erreur inattendue s\'est produite. Veuillez réessayer.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  }, [paymentInstallment, generatePaymentReference, initiateAirtelCollection, formatCurrency, refresh]);
+
+
   // Render payment item
   const renderPaymentItem = useCallback(
     ({ item }: { item: PaymentListItem }) => (
@@ -162,29 +259,21 @@ const PaymentsScreen: React.FC = () => {
   );
 
   // Event handlers
-  const handlePaymentPress = useCallback((installment: ParentInstallmentDto) => {
+  const handlePaymentPress = useCallback(async (installment: ParentInstallmentDto) => {
     setSelectedPayment(installment);
     setShowPaymentDetailModal(true);
   }, []);
 
-  const handlePaymentPay = useCallback((installment: ParentInstallmentDto) => {
-    Alert.alert(
-      'Confirmer le paiement',
-      `Payer ${formatCurrency(installment.amount)} pour ${installment.childName}?`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Continuer',
-          onPress: () => {
-            console.log('Payment initiated for:', installment.installmentId);
-            // TODO: Implement your Airtel payment logic here
-            // Example:
-            // initiateAirtelPayment(installment);
-          }
-        }
-      ]
-    );
-  }, [formatCurrency]);
+  const handlePaymentPay = useCallback(async (installment: ParentInstallmentDto) => {
+    if (installment.isPaid) {
+      Alert.alert('Déjà payé', 'Ce paiement a déjà été effectué.');
+      return;
+    }
+
+    setPaymentInstallment(installment);
+    await handleInitiateAirtelPayment(installment);
+    setShowPaymentModal(true);
+  }, []);
 
   const handleClosePaymentDetailModal = useCallback(() => {
     setShowPaymentDetailModal(false);

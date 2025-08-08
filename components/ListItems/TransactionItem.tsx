@@ -99,6 +99,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
             case 'pending':
             case 'processing':
                 return "En attente";
+            case "in progress":
+                return "En cours";
             case 'failed':
             case 'error':
                 return "Échoué";
