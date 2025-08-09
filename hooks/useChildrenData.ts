@@ -1,7 +1,7 @@
 // hooks/useChildrenData.ts
 import useUserInfo from '@/hooks/useUserInfo';
 import { useGetParentChildrens } from '@/services/userServices';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface UseChildrenDataProps {
   pageSize?: number;
@@ -68,22 +68,44 @@ export const useChildrenData = ({
   const [error, setError] = useState<string | null>(null);
   const [hasNextPage, setHasNextPage] = useState(true);
   
+  // Track initialization state to prevent multiple initial loads
+  const [isInitialized, setIsInitialized] = useState(false);
+  const isLoadingRef = useRef(false); // Prevent concurrent requests
+  const hasTriedInitialLoad = useRef(false); // Track if we've attempted initial load
+  
   // Get parent ID from user info
   const parentId = userInfo?.parentId ? parseInt(userInfo.parentId) : null;
 
-  // Fetch children data
-  const fetchChildren = useCallback(async (
+  // Internal fetch function with concurrency protection
+  const fetchChildrenInternal = useCallback(async (
     page: number = 1,
     search: string = searchQuery,
     isRefresh: boolean = false,
     isLoadMore: boolean = false
   ) => {
+    console.log('🚀 fetchChildrenInternal called:', {
+      page,
+      isRefresh,
+      isLoadMore,
+      isLoadingRef: isLoadingRef.current,
+      parentId,
+      search
+    });
+
+    // Prevent concurrent requests
+    if (isLoadingRef.current) {
+      console.log('⚠️ Children request blocked - already loading');
+      return;
+    }
+
     if (!parentId) {
       setError('Parent ID not found');
       return;
     }
 
     try {
+      isLoadingRef.current = true;
+
       // Set appropriate loading state
       if (isRefresh) {
         setIsRefreshing(true);
@@ -112,14 +134,26 @@ export const useChildrenData = ({
         } else {
           // Append data for load more
           setChildren(prev => [...prev, ...newChildren]);
+          setCurrentPage(page);
         }
         
         setTotalCount(response.data.totalCount);
-        setCurrentPage(page);
         
         // Calculate if there's a next page
         const totalPages = Math.ceil(response.data.totalCount / pageSize);
         setHasNextPage(page < totalPages);
+
+        // Mark as initialized only on successful page 1 load
+        if (page === 1) {
+          setIsInitialized(true);
+        }
+
+        console.log('📊 Children data loaded:', {
+          newCount: newChildren.length,
+          totalCount: response.data.totalCount,
+          currentPage: page,
+          hasNextPage: page < totalPages,
+        });
         
       } else {
         throw new Error(response.error || 'Impossible de récupérer les enfants');
@@ -132,40 +166,105 @@ export const useChildrenData = ({
       setIsLoading(false);
       setIsLoadingMore(false);
       setIsRefreshing(false);
+      isLoadingRef.current = false;
     }
   }, [parentId, getParentChildrens, pageSize, searchQuery]);
 
   // Load more data
   const loadMore = useCallback(async () => {
-    if (!hasNextPage || isLoadingMore || isLoading) return;
+    // CRITICAL: Don't allow load more if page 1 was never loaded
+    if (!isInitialized) {
+      console.log('⚠️ Children load more blocked - page 1 never loaded, triggering initial load instead');
+      if (!isLoadingRef.current && hasTriedInitialLoad.current === false) {
+        hasTriedInitialLoad.current = true;
+        await fetchChildrenInternal(1, searchQuery, false, false);
+      }
+      return;
+    }
+
+    if (!hasNextPage || isLoadingMore || isLoading || isLoadingRef.current) {
+      console.log('⚠️ Children load more blocked:', {
+        hasNextPage,
+        isLoadingMore,
+        isLoading,
+        isLoadingRef: isLoadingRef.current,
+      });
+      return;
+    }
     
+    console.log('📄 Loading more children, next page:', currentPage + 1);
     const nextPage = currentPage + 1;
-    await fetchChildren(nextPage, searchQuery, false, true);
-  }, [hasNextPage, isLoadingMore, isLoading, currentPage, searchQuery, fetchChildren]);
+    await fetchChildrenInternal(nextPage, searchQuery, false, true);
+  }, [hasNextPage, isLoadingMore, isLoading, currentPage, searchQuery, isInitialized, fetchChildrenInternal]);
 
   // Refresh data
   const refresh = useCallback(async () => {
-    await fetchChildren(1, searchQuery, true, false);
-  }, [searchQuery, fetchChildren]);
+    console.log('🔄 Refreshing children data...');
+    await fetchChildrenInternal(1, searchQuery, true, false);
+  }, [searchQuery, fetchChildrenInternal]);
 
-  // Search function with debouncing handled by the component
+  // Search function
   const search = useCallback((query: string) => {
+    console.log('🔍 Searching children:', query);
     setSearchQuery(query);
-    // Reset pagination and fetch new data
-    fetchChildren(1, query, false, false);
-  }, [fetchChildren]);
+    setCurrentPage(1);
+    setIsInitialized(false); // Reset initialization to allow re-fetch
+    hasTriedInitialLoad.current = false; // Reset the attempt flag
+    if (parentId) {
+      fetchChildrenInternal(1, query, false, false);
+    }
+  }, [parentId, fetchChildrenInternal]);
 
   // Retry function
   const retry = useCallback(() => {
-    fetchChildren(1, searchQuery, false, false);
-  }, [fetchChildren, searchQuery]);
+    console.log('🔄 Retrying children data...');
+    setIsInitialized(false); // Reset initialization to allow re-fetch
+    hasTriedInitialLoad.current = false; // Reset the attempt flag
+    fetchChildrenInternal(1, searchQuery, false, false);
+  }, [searchQuery, fetchChildrenInternal]);
 
-  // Initial data fetch
+  // Initial load effect - SINGLE POINT OF TRUTH
   useEffect(() => {
-    if (parentId) {
-      fetchChildren(1, initialSearch);
+    console.log('🎯 Children useEffect triggered:', {
+      parentId,
+      isInitialized,
+      hasTriedInitialLoad: hasTriedInitialLoad.current,
+      isLoadingRef: isLoadingRef.current,
+    });
+
+    // Only load data once when:
+    // 1. We have a parentId
+    // 2. We haven't initialized yet
+    // 3. We haven't tried loading yet
+    // 4. We're not currently loading
+    if (parentId && !isInitialized && !hasTriedInitialLoad.current && !isLoadingRef.current) {
+      console.log('✅ Triggering initial children data load');
+      hasTriedInitialLoad.current = true; // Mark that we've attempted
+      fetchChildrenInternal(1, initialSearch, false, false);
+    } else {
+      console.log('⏭️ Skipping children initial load:', {
+        hasParentId: !!parentId,
+        isInitialized,
+        hasTriedInitialLoad: hasTriedInitialLoad.current,
+        isLoading: isLoadingRef.current,
+      });
     }
-  }, [parentId]); // Only run when parentId changes
+  }, [parentId, isInitialized]);
+
+  // Force initial load if we somehow have no data after a delay
+  useEffect(() => {
+    if (parentId && !isInitialized && !isLoadingRef.current) {
+      const timer = setTimeout(() => {
+        console.log('🔥 Force initial children load - ensuring page 1 loads');
+        if (!isInitialized && !isLoadingRef.current) {
+          hasTriedInitialLoad.current = true;
+          fetchChildrenInternal(1, searchQuery, false, false);
+        }
+      }, 1000); // Wait 1 second then force load if still no data
+
+      return () => clearTimeout(timer);
+    }
+  }, [parentId, isInitialized]);
 
   // Debug logging
   useEffect(() => {
@@ -178,8 +277,9 @@ export const useChildrenData = ({
       totalCount,
       error,
       parentId,
+      isInitialized,
     });
-  }, [children.length, isLoading, isLoadingMore, currentPage, hasNextPage, totalCount, error, parentId]);
+  }, [children.length, isLoading, isLoadingMore, currentPage, hasNextPage, totalCount, error, parentId, isInitialized]);
 
   return {
     // Data
