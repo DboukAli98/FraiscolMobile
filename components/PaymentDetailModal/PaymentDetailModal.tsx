@@ -56,32 +56,50 @@ export const PaymentDetailModal: React.FC<PaymentDetailModalProps> = ({
 
     // Get status info
     const getStatusInfo = () => {
-        if (installment.isPaid) {
-            return {
-                text: 'Payé',
-                color: colors.text.white,
-                backgroundColor: colors.success.light,
-                icon: 'checkmark-circle' as keyof typeof Ionicons.glyphMap,
-            };
-        }
-
+        // First check if it's overdue (regardless of status)
         const isOverdue = new Date(installment.dueDate) < new Date();
-        if (isOverdue) {
+        if (isOverdue && installment.statusId !== 8) { // Not overdue if already paid
             return {
                 text: 'En retard',
-                color: colors.text.white,
+                color: colors.background.default,
                 backgroundColor: colors.error.light,
-                icon: 'alert-circle' as keyof typeof Ionicons.glyphMap,
+                icon: 'alert-circle-outline' as keyof typeof Ionicons.glyphMap,
             };
         }
 
-        return {
-            text: 'En attente',
-            color: colors.text.white,
-            backgroundColor: colors.warning.light,
-            icon: 'time' as keyof typeof Ionicons.glyphMap,
-        };
+        // Then check specific statuses
+        switch (installment.statusId) {
+            case 6:
+                return {
+                    text: 'En attente',
+                    color: colors.background.default,
+                    backgroundColor: colors.warning.light,
+                    icon: 'time-outline' as keyof typeof Ionicons.glyphMap,
+                };
+            case 11:
+                return {
+                    text: 'En cours',
+                    color: colors.background.default,
+                    backgroundColor: colors.primary.light,
+                    icon: 'sync-outline' as keyof typeof Ionicons.glyphMap, // Better icon for "in progress"
+                };
+            case 8:
+                return {
+                    text: 'Payé',
+                    color: colors.background.default,
+                    backgroundColor: colors.success.light,
+                    icon: 'checkmark-circle-outline' as keyof typeof Ionicons.glyphMap,
+                };
+            default:
+                return {
+                    text: 'En attente',
+                    color: colors.background.default,
+                    backgroundColor: colors.warning.light,
+                    icon: 'time-outline' as keyof typeof Ionicons.glyphMap,
+                };
+        }
     };
+
 
     const statusInfo = getStatusInfo();
     const isOverdue = !installment.isPaid && new Date(installment.dueDate) < new Date();

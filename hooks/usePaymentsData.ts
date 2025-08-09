@@ -6,7 +6,7 @@ import {
   ParentInstallmentDto,
   useGetParentInstallments
 } from '@/services/userServices';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface UsePaymentsDataProps {
   pageSize?: number;
@@ -73,16 +73,16 @@ export const usePaymentsData = ({
   const [filters, setFilters] = useState(initialFilters);
   const [error, setError] = useState<string | null>(null);
   const [hasNextPage, setHasNextPage] = useState(true);
-  // “did we ever successfully fetch page 1?” 
-  // We won’t set this to true until we know page 1 came back cleanly.
-  const [didFetchOnce, setDidFetchOnce] = useState(false);
+  
+  // Track initialization state to prevent multiple initial loads
+  const [isInitialized, setIsInitialized] = useState(false);
+  const isLoadingRef = useRef(false); // Prevent concurrent requests
+  const hasTriedInitialLoad = useRef(false); // Track if we've attempted initial load
   
   // Get parent ID (null until useUserInfo() rehydrates)
   const parentId = userInfo?.parentId ? parseInt(userInfo.parentId, 10) : null;
 
-  //───────────────────────────────────────────────────────────────────────────
-  // This helper actually calls the API. It tries up to 2 times if the first
-  // call fails due to a (likely) cold-start or transient error.
+  // This helper actually calls the API with retry logic
   const fetchInstallmentsOnce = async (
     page: number,
     currentFilters: any
@@ -105,7 +105,7 @@ export const usePaymentsData = ({
       schoolGradeSectionId: currentFilters.gradeSectionId,
     };
 
-    // We’ll try up to 2 attempts if the first attempt throws or returns status=Error.
+    
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const response = await getParentInstallments(params);
@@ -117,46 +117,48 @@ export const usePaymentsData = ({
             totalCount: response.data.totalCount,
           };
         } else {
-          // The server returned a 4xx/5xx or status=Error in JSON.
           const msg = response.error ?? 'Failed to fetch installments';
           if (attempt === 2) {
             return { success: false, errorMessage: msg };
           }
-          // Otherwise, wait a tiny bit and retry
-          await new Promise(res => setTimeout(res, 200));
+          await new Promise(res => setTimeout(res, 300));
           continue;
         }
       } catch (ex: any) {
-        // Could be a cold-start connection failure (“Login failed…” or timeout).
         if (attempt === 2) {
           return { success: false, errorMessage: ex.message ?? 'Erreur interne' };
         }
-        await new Promise(res => setTimeout(res, 200));
+        await new Promise(res => setTimeout(res, 300));
         continue;
       }
     }
 
-    // In practice we’ll never reach here.
     return { success: false, errorMessage: 'Unknown error' };
   };
 
-  //───────────────────────────────────────────────────────────────────────────
-  // This is the internal function that your hook uses for page 1 (initial),
-  // page N (load more), or page 1 again (refresh). It does not flip didFetchOnce
-  // to true until we confirm a successful fetch.
-  const fetchInstallmentsInternal = async (
+  // Internal fetch function with concurrency protection
+  const fetchInstallmentsInternal = useCallback(async (
     page: number = 1,
     currentFilters: any = {},
     isRefresh: boolean = false,
     isLoadMore: boolean = false
   ) => {
-    console.log('Parent Id :::', parentId);
+    
+
+    // Prevent concurrent requests
+    if (isLoadingRef.current) {
+      
+      return;
+    }
+
     if (!parentId) {
       setError('Parent ID not found');
       return;
     }
 
     try {
+      isLoadingRef.current = true;
+
       if (isRefresh) {
         setIsRefreshing(true);
       } else if (isLoadMore) {
@@ -168,7 +170,6 @@ export const usePaymentsData = ({
 
       const result = await fetchInstallmentsOnce(page, currentFilters);
       if (!result.success) {
-        // Don’t mark didFetchOnce = true; let the UI (or a manual retry) try again.
         setError(result.errorMessage ?? 'Échec de la récupération');
         return;
       }
@@ -188,83 +189,105 @@ export const usePaymentsData = ({
       const totalPages = Math.ceil(total / pageSize);
       setHasNextPage(page < totalPages);
 
-      // Only flip “didFetchOnce” if page === 1 AND we got data or zero-rows successfully
+      // Mark as initialized only on successful page 1 load
       if (page === 1) {
-        setDidFetchOnce(true);
+        setIsInitialized(true);
       }
 
-      console.log('📊 Data loaded:', {
-        newCount: newItems.length,
-        totalCount: total,
-        currentPage: page,
-        hasNextPage: page < totalPages,
-      });
+      
+    } catch (error: any) {
+      console.error('💥 fetchInstallmentsInternal error:', error);
+      setError(error.message || 'An error occurred');
     } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
       setIsRefreshing(false);
+      isLoadingRef.current = false;
     }
-  };
+  }, [parentId, getParentInstallments, pageSize]);
 
-  //───────────────────────────────────────────────────────────────────────────
-  // “Load more” simply calls page = currentPage + 1, if there is a next page
+  // Load more data
   const loadMore = useCallback(async () => {
-    if (!hasNextPage || isLoadingMore || isLoading) {
-      console.log('⚠️ Load more blocked:', {
-        hasNextPage,
-        isLoadingMore,
-        isLoading,
-      });
+    // CRITICAL: Don't allow load more if page 1 was never loaded
+    if (!isInitialized) {
+     
+      if (!isLoadingRef.current && hasTriedInitialLoad.current === false) {
+        hasTriedInitialLoad.current = true;
+        await fetchInstallmentsInternal(1, filters, false, false);
+      }
       return;
     }
-    console.log('📄 Loading more data, next page:', currentPage + 1);
+
+    if (!hasNextPage || isLoadingMore || isLoading || isLoadingRef.current) {
+     
+      return;
+    }
+   
     const nextPage = currentPage + 1;
     await fetchInstallmentsInternal(nextPage, filters, false, true);
-  }, [hasNextPage, isLoadingMore, isLoading, currentPage, filters, parentId]);
+  }, [hasNextPage, isLoadingMore, isLoading, currentPage, filters, isInitialized, fetchInstallmentsInternal]);
 
-  //───────────────────────────────────────────────────────────────────────────
-  // “Pull to refresh” always tries page 1 again
+  // Pull to refresh
   const refresh = useCallback(async () => {
-    console.log('🔄 Refreshing data...');
+   
     await fetchInstallmentsInternal(1, filters, true, false);
-  }, [filters, parentId]);
+  }, [filters, fetchInstallmentsInternal]);
 
-  //───────────────────────────────────────────────────────────────────────────
-  // When filters change, immediately fetch page 1
+  // Apply filters
   const applyFilters = useCallback(
     (newFilters: UsePaymentsDataProps['filters']) => {
       const filtersToApply = newFilters || {};
       console.log('🔍 Applying filters:', filtersToApply);
       setFilters(filtersToApply);
       setCurrentPage(1);
-      setDidFetchOnce(false); // allow the effect below to re-fire
+      setIsInitialized(false); // Reset initialization to allow re-fetch
+      hasTriedInitialLoad.current = false; // Reset the attempt flag
       if (parentId) {
         fetchInstallmentsInternal(1, filtersToApply, false, false);
       }
     },
-    [parentId]
+    [parentId, fetchInstallmentsInternal]
   );
 
-  //───────────────────────────────────────────────────────────────────────────
-  // “Retry” simply calls page 1 again
+  // Retry function
   const retry = useCallback(() => {
-    console.log('🔄 Retrying...');
-    setDidFetchOnce(false); // allow the effect below to re-fire
+  
+    setIsInitialized(false); // Reset initialization to allow re-fetch
+    hasTriedInitialLoad.current = false; // Reset the attempt flag
     fetchInstallmentsInternal(1, filters, false, false);
-  }, [filters, parentId]);
+  }, [filters, fetchInstallmentsInternal]);
 
-  //───────────────────────────────────────────────────────────────────────────
-  // Initial load effect: only run once we have a valid parentId AND we have not
-  // yet successfully fetched page 1. We do NOT flip `didFetchOnce = true` here;
-  // we leave that to `fetchInstallmentsInternal` itself (but only if page 1 
-  // returned without error).
-useEffect(() => {
-  if (parentId && !didFetchOnce) {
-    fetchInstallmentsInternal(1, filters, false, false);
-  }
-}, [parentId, didFetchOnce, filters]);
+  // Initial load effect - SINGLE POINT OF TRUTH
+  useEffect(() => {
+    
 
-  //───────────────────────────────────────────────────────────────────────────
+    // Only load data once when:
+    // 1. We have a parentId
+    // 2. We haven't initialized yet
+    // 3. We haven't tried loading yet
+    // 4. We're not currently loading
+    if (parentId && !isInitialized && !hasTriedInitialLoad.current && !isLoadingRef.current) {
+    
+      hasTriedInitialLoad.current = true; // Mark that we've attempted
+      fetchInstallmentsInternal(1, filters, false, false);
+    } 
+  }, [parentId, isInitialized]);
+
+  // Force initial load if we somehow have no data after a delay
+  useEffect(() => {
+    if (parentId && !isInitialized && !isLoadingRef.current) {
+      const timer = setTimeout(() => {
+        
+        if (!isInitialized && !isLoadingRef.current) {
+          hasTriedInitialLoad.current = true;
+          fetchInstallmentsInternal(1, filters, false, false);
+        }
+      }, 1000); // Wait 1 second then force load if still no data
+
+      return () => clearTimeout(timer);
+    }
+  }, [parentId, isInitialized]); // REMOVED fetchInstallmentsInternal and filters from dependencies
+
   // Calculate summary data
   const summaryData = useMemo(() => {
     const now = new Date();

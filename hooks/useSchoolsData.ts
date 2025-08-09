@@ -83,7 +83,6 @@ export const useSchoolsData = ({
       setError(null);
 
       const response = await getParentSchools({
-        parentId,
         pageNumber: page,
         pageSize,
         search: search.trim(),

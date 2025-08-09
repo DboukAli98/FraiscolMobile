@@ -117,6 +117,7 @@ export interface ParentInstallmentDto {
   childName: string;
   className: string;
   schoolName: string;
+  statusId: number;
 }
 
 export interface GetParentInstallmentsParams {
