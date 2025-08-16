@@ -1,4 +1,5 @@
-// hooks/useMerchandiseData.ts
+// hooks/useMerchandiseData.ts - FIXED VERSION
+
 import { SchoolMerchandise, useGetSchoolMerchandises } from '@/services/merchandisesServices';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -24,7 +25,7 @@ export interface UseMerchandiseDataReturn {
     isLoading: boolean;
     isLoadingMore: boolean;
     isRefreshing: boolean;
-    isSearching: boolean; // Added for search loading state
+    isSearching: boolean;
     
     // Pagination
     hasNextPage: boolean;
@@ -33,7 +34,7 @@ export interface UseMerchandiseDataReturn {
     
     // Search
     searchQuery: string;
-    debouncedSearchQuery: string; // Added for better search handling
+    debouncedSearchQuery: string;
     
     // Error handling
     error: string | null;
@@ -51,7 +52,7 @@ export const useMerchandiseData = ({
     categoryId,
     pageSize = 10,
     initialSearch = '',
-    all = false,
+    all = true, // ← CHANGED DEFAULT TO true
 }: UseMerchandiseDataProps): UseMerchandiseDataReturn => {
     // Hooks
     const getSchoolMerchandises = useGetSchoolMerchandises();
@@ -76,14 +77,15 @@ export const useMerchandiseData = ({
 
     // Track initialization state to prevent multiple initial loads
     const [isInitialized, setIsInitialized] = useState(false);
-    const isLoadingRef = useRef(false); // Prevent concurrent requests
-    const hasTriedInitialLoad = useRef(false); // Track if we've attempted initial load
+    const isLoadingRef = useRef(false);
+    const hasTriedInitialLoad = useRef(false);
+    const lastSearchQuery = useRef(initialSearch); // ← ADD THIS to track the last search that was executed
 
     // Debounce search query
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearchQuery(searchQuery);
-        }, 500); // 500ms debounce
+        }, 500);
 
         return () => clearTimeout(timer);
     }, [searchQuery]);
@@ -102,7 +104,8 @@ export const useMerchandiseData = ({
             isLoadMore,
             isLoadingRef: isLoadingRef.current,
             schoolId: currentFilters.schoolId,
-            search
+            search,
+            searchLength: search.length
         });
 
         // Prevent concurrent requests
@@ -129,7 +132,11 @@ export const useMerchandiseData = ({
             }
             
             setError(null);
-
+            
+            // 🔍 UPDATE: Track the search query being executed
+            lastSearchQuery.current = search;
+            console.log("🔍 EXECUTING SEARCH:", `"${search}"`);
+            
             const response = await getSchoolMerchandises({
                 schoolId: currentFilters.schoolId,
                 categoryId: currentFilters.categoryId,
@@ -168,6 +175,7 @@ export const useMerchandiseData = ({
                     totalCount: response.data.totalCount,
                     currentPage: page,
                     hasNextPage: page < totalPages,
+                    searchExecuted: search
                 });
                 
             } else {
@@ -184,31 +192,19 @@ export const useMerchandiseData = ({
             setIsSearching(false);
             isLoadingRef.current = false;
         }
-    }, [getSchoolMerchandises, pageSize, debouncedSearchQuery, filters, all]);
+    }, [getSchoolMerchandises, pageSize, all]);
 
     // Load more data
     const loadMore = useCallback(async () => {
-        // CRITICAL: Don't allow load more if page 1 was never loaded
         if (!isInitialized) {
-            console.log('⚠️ Merchandises load more blocked - page 1 never loaded, triggering initial load instead');
-            if (!isLoadingRef.current && hasTriedInitialLoad.current === false) {
-                hasTriedInitialLoad.current = true;
-                await fetchMerchandisesInternal(1, debouncedSearchQuery, filters, false, false);
-            }
+            console.log('⚠️ Merchandises load more blocked - page 1 never loaded');
             return;
         }
 
         if (!hasNextPage || isLoadingMore || isLoading || isLoadingRef.current) {
-            console.log('⚠️ Merchandises load more blocked:', {
-                hasNextPage,
-                isLoadingMore,
-                isLoading,
-                isLoadingRef: isLoadingRef.current,
-            });
             return;
         }
         
-        console.log('📄 Loading more merchandises, next page:', currentPage + 1);
         const nextPage = currentPage + 1;
         await fetchMerchandisesInternal(nextPage, debouncedSearchQuery, filters, false, true);
     }, [hasNextPage, isLoadingMore, isLoading, currentPage, debouncedSearchQuery, filters, isInitialized, fetchMerchandisesInternal]);
@@ -221,14 +217,13 @@ export const useMerchandiseData = ({
 
     // Search function - only updates search query, doesn't fetch immediately
     const search = useCallback((query: string) => {
-        console.log('🔍 Searching merchandises:', query);
+        console.log('🔍 Searching merchandises:', `"${query}"`);
         setSearchQuery(query);
         if (query !== debouncedSearchQuery) {
-            setIsSearching(true); // Show search loading when query changes
+            setIsSearching(true);
         }
-        const newFilters = { ...filters, search: query };
-        setFilters(newFilters);
-    }, [filters, debouncedSearchQuery]);
+        // DON'T update filters here - let the debounced effect handle it
+    }, [debouncedSearchQuery]);
 
     // Apply filters
     const applyFilters = useCallback((newFilters: FiltersState) => {
@@ -236,8 +231,8 @@ export const useMerchandiseData = ({
         setFilters(newFilters);
         setSearchQuery(newFilters.search || '');
         setCurrentPage(1);
-        setIsInitialized(false); // Reset initialization for filter change
-        hasTriedInitialLoad.current = false; // Reset the attempt flag
+        setIsInitialized(false);
+        hasTriedInitialLoad.current = false;
         if (newFilters.schoolId) {
             fetchMerchandisesInternal(1, newFilters.search || '', newFilters, false, false);
         }
@@ -246,23 +241,38 @@ export const useMerchandiseData = ({
     // Retry function
     const retry = useCallback(() => {
         console.log('🔄 Retrying merchandises data...');
-        setIsInitialized(false); // Reset initialization to allow re-fetch
-        hasTriedInitialLoad.current = false; // Reset the attempt flag
+        setIsInitialized(false);
+        hasTriedInitialLoad.current = false;
         fetchMerchandisesInternal(1, debouncedSearchQuery, filters, false, false);
     }, [debouncedSearchQuery, filters, fetchMerchandisesInternal]);
 
-    // Fetch data when debounced search query changes (only for search, not filters)
+    // 🔍 FIXED: Handle debounced search properly
     useEffect(() => {
-        if (schoolId && isInitialized && debouncedSearchQuery !== filters.search && !isLoadingRef.current) {
-            console.log('🔍 Debounced merchandises search triggered:', debouncedSearchQuery);
+        console.log('🔍 DEBOUNCE EFFECT CHECK:', {
+            schoolId,
+            isInitialized,
+            debouncedSearchQuery: `"${debouncedSearchQuery}"`,
+            lastSearchQuery: `"${lastSearchQuery.current}"`,
+            searchChanged: debouncedSearchQuery !== lastSearchQuery.current,
+            isLoading: isLoadingRef.current
+        });
+
+        // Only trigger search if:
+        // 1. We have schoolId and are initialized
+        // 2. The debounced search query is different from what we last executed
+        // 3. We're not currently loading
+        if (schoolId && isInitialized && debouncedSearchQuery !== lastSearchQuery.current && !isLoadingRef.current) {
+            console.log('✅ Triggering search with debounced query:', `"${debouncedSearchQuery}"`);
             const newFilters = { ...filters, search: debouncedSearchQuery };
             setFilters(newFilters);
             setCurrentPage(1);
             fetchMerchandisesInternal(1, debouncedSearchQuery, newFilters, false, false);
+        } else {
+            console.log('⏭️ Skipping debounced search - no change or conditions not met');
         }
-    }, [schoolId, isInitialized, debouncedSearchQuery]);
+    }, [schoolId, isInitialized, debouncedSearchQuery, filters, fetchMerchandisesInternal]);
 
-    // Initial load effect - SINGLE POINT OF TRUTH
+    // Initial load effect
     useEffect(() => {
         console.log('🎯 Merchandises useEffect triggered:', {
             schoolId,
@@ -271,41 +281,12 @@ export const useMerchandiseData = ({
             isLoadingRef: isLoadingRef.current,
         });
 
-        // Only load data once when:
-        // 1. We have a schoolId
-        // 2. We haven't initialized yet
-        // 3. We haven't tried loading yet
-        // 4. We're not currently loading
         if (schoolId && !isInitialized && !hasTriedInitialLoad.current && !isLoadingRef.current) {
             console.log('✅ Triggering initial merchandises data load');
-            hasTriedInitialLoad.current = true; // Mark that we've attempted
+            hasTriedInitialLoad.current = true;
             const initialFilters = { schoolId, categoryId, search: initialSearch };
             setFilters(initialFilters);
             fetchMerchandisesInternal(1, initialSearch, initialFilters, false, false);
-        } else {
-            console.log('⏭️ Skipping merchandises initial load:', {
-                hasSchoolId: !!schoolId,
-                isInitialized,
-                hasTriedInitialLoad: hasTriedInitialLoad.current,
-                isLoading: isLoadingRef.current,
-            });
-        }
-    }, [schoolId, isInitialized]);
-
-    // Force initial load if we somehow have no data after a delay
-    useEffect(() => {
-        if (schoolId && !isInitialized && !isLoadingRef.current) {
-            const timer = setTimeout(() => {
-                console.log('🔥 Force initial merchandises load - ensuring page 1 loads');
-                if (!isInitialized && !isLoadingRef.current) {
-                    hasTriedInitialLoad.current = true;
-                    const initialFilters = { schoolId, categoryId, search: debouncedSearchQuery };
-                    setFilters(initialFilters);
-                    fetchMerchandisesInternal(1, debouncedSearchQuery, initialFilters, false, false);
-                }
-            }, 1000); // Wait 1 second then force load if still no data
-
-            return () => clearTimeout(timer);
         }
     }, [schoolId, isInitialized]);
 
@@ -325,6 +306,7 @@ export const useMerchandiseData = ({
             isInitialized,
             searchQuery,
             debouncedSearchQuery,
+            lastSearchExecuted: lastSearchQuery.current
         });
     }, [merchandises.length, isLoading, isLoadingMore, isSearching, currentPage, hasNextPage, totalCount, error, schoolId, categoryId, isInitialized, searchQuery, debouncedSearchQuery]);
 

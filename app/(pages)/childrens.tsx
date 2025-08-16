@@ -69,15 +69,20 @@ const ChildrensScreen = () => {
     const [schools, setSchools] = useState<School[]>([]);
     const [isLoadingSchools, setIsLoadingSchools] = useState(false);
     const [isAddingChild, setIsAddingChild] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
     //#endregion
 
-    const listData: ChildrenListItem[] = children.map(child => ({
-        ...child,
-        id: child.childId,
-        schoolName: child.schoolName,
-        schoolGradeName: child.schoolGradeName,
-    }));
+    // Memoize the list data transformation
+    const listData: ChildrenListItem[] = React.useMemo(() =>
+        children.map(child => ({
+            ...child,
+            id: child.childId,
+            schoolName: child.schoolName,
+            schoolGradeName: child.schoolGradeName,
+        })), [children]
+    );
 
+    // Memoized render item to prevent unnecessary re-renders
     const renderChildItem: ListRenderItem<ChildrenListItem> = useCallback(({ item }) => (
         <ChildItem
             child={item}
@@ -85,8 +90,9 @@ const ChildrensScreen = () => {
             onEdit={handleEditChild}
             onDelete={handleDeleteChild}
         />
-    ), []);
+    ), []); // Empty deps since handlers are memoized below
 
+    // Memoized handlers
     const handleChildPress = useCallback((child: Children) => {
         router.push({
             pathname: '/(pages)/child-details/[id]',
@@ -153,10 +159,20 @@ const ChildrensScreen = () => {
         }
     }, [getAllSchools]);
 
+    // Memoized key extractor
     const keyExtractor = useCallback((item: ChildrenListItem) =>
         item.childId.toString(),
         []);
 
+    // Memoized search handler with loading state
+    const handleSearch = useCallback((query: string) => {
+        setIsSearching(true);
+        search(query);
+        // Reset searching state after a delay (search should complete within this time)
+        setTimeout(() => setIsSearching(false), 1000);
+    }, [search]);
+
+    // Memoized list header
     const ListHeaderComponent = useCallback(() => (
         <View style={styles.header}>
             {totalCount > 0 && (
@@ -167,6 +183,7 @@ const ChildrensScreen = () => {
         </View>
     ), [totalCount]);
 
+    // Memoized empty icon
     const EmptyIcon = useCallback(() => (
         <Ionicons
             name="people-outline"
@@ -175,7 +192,7 @@ const ChildrensScreen = () => {
         />
     ), []);
 
-    const handleBack = React.useCallback(() => {
+    const handleBack = useCallback(() => {
         router.back();
     }, []);
 
@@ -232,7 +249,7 @@ const ChildrensScreen = () => {
         if (showAddModal && schools.length === 0) {
             fetchSchools();
         }
-    }, [showAddModal]);
+    }, [showAddModal, fetchSchools]);
     //#endregion
 
     return (
@@ -263,23 +280,20 @@ const ChildrensScreen = () => {
                 isLoadingMore={isLoadingMore}
                 onRefresh={refresh}
                 isRefreshing={isRefreshing}
-                onSearch={search}
+                onSearch={handleSearch}
                 searchQuery={searchQuery}
-                showSearch={false}
+                showSearch={true} // Enable search
+                isSearching={isSearching}
                 searchPlaceholder="Rechercher un enfant..."
+                searchDebounceMs={300} // Faster debounce for better UX
                 emptyTitle="Aucun enfant trouvé"
                 emptySubtitle="Vous n'avez encore ajouté aucun enfant ou aucun enfant ne correspond à votre recherche."
                 emptyIcon={<EmptyIcon />}
                 error={error}
                 onRetry={retry}
                 ListHeaderComponent={ListHeaderComponent}
-                estimatedItemSize={120} // Add this for FlashList
+                estimatedItemSize={120} // Estimated height for each child item
                 accessibilityLabel="Liste des enfants"
-            // Remove these FlatList-specific props that don't exist in FlashList:
-            // windowSize={10}
-            // maxToRenderPerBatch={10}
-            // removeClippedSubviews={true}
-            // contentContainerStyle={styles.listContainer} // Handled internally now
             />
             <AddChildModal
                 visible={showAddModal}
@@ -295,7 +309,6 @@ const ChildrensScreen = () => {
 export default ChildrensScreen;
 
 const styles = StyleSheet.create({
-    // Remove listContainer since it's handled internally
     header: {
         paddingVertical: spacingY._20,
         paddingHorizontal: 4,

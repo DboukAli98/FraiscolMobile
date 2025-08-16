@@ -1,18 +1,18 @@
 // components/List/InfiniteList.tsx
 import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
-import { scaleFont, verticalScale } from '@/utils/stylings';
+import { scaleFont } from '@/utils/stylings';
 import { FlashList, ListRenderItem } from "@shopify/flash-list";
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     RefreshControl,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
     ViewStyle
 } from 'react-native';
+import { MemoizedSearchInput } from '../SearchInput/SearchInput';
 
 // Generic interfaces for the list component
 export interface ListItem {
@@ -49,6 +49,8 @@ export interface InfiniteListProps<T extends ListItem> {
     onSearch?: (query: string) => void;
     searchPlaceholder?: string;
     showSearch?: boolean;
+    isSearching?: boolean;
+    searchDebounceMs?: number;
 
     // Empty state props
     emptyTitle?: string;
@@ -79,6 +81,128 @@ export interface InfiniteListProps<T extends ListItem> {
     accessibilityLabel?: string;
 }
 
+// Memoized search component to prevent re-renders
+const MemoizedSearchSection = React.memo<{
+    showSearch: boolean;
+    searchQuery: string;
+    onSearch?: (query: string) => void;
+    searchPlaceholder: string;
+    isSearching?: boolean;
+    searchDebounceMs?: number;
+}>(({
+    showSearch,
+    searchQuery,
+    onSearch,
+    searchPlaceholder,
+    isSearching,
+    searchDebounceMs
+}) => {
+    if (!showSearch) return null;
+
+    return (
+        <MemoizedSearchInput
+            searchQuery={searchQuery}
+            onSearch={onSearch}
+            placeholder={searchPlaceholder}
+            isSearching={isSearching}
+            debounceMs={searchDebounceMs}
+            showBorder={true}
+        />
+    );
+});
+
+MemoizedSearchSection.displayName = 'MemoizedSearchSection';
+
+// Memoized loading footer
+const MemoizedLoadingFooter = React.memo<{
+    isLoadingMore: boolean;
+}>(({ isLoadingMore }) => {
+    if (!isLoadingMore) return null;
+
+    return (
+        <View style={styles.loadingFooter}>
+            <ActivityIndicator
+                size="small"
+                color={colors.primary.main}
+            />
+            <Text style={styles.loadingText}>Loading more...</Text>
+        </View>
+    );
+});
+
+MemoizedLoadingFooter.displayName = 'MemoizedLoadingFooter';
+
+// Memoized empty component
+const MemoizedEmptyComponent = React.memo<{
+    isLoading: boolean;
+    error: string | null;
+    dataLength: number;
+    emptyTitle: string;
+    emptySubtitle: string;
+    emptyIcon?: React.ReactNode;
+    onRetry?: () => void;
+}>(({
+    isLoading,
+    error,
+    dataLength,
+    emptyTitle,
+    emptySubtitle,
+    emptyIcon,
+    onRetry
+}) => {
+    // Don't show empty component if we're loading initially
+    if (isLoading && dataLength === 0) {
+        return null; // Let FlashList handle the loading state
+    }
+
+    if (error) {
+        return (
+            <View style={styles.centerContainer}>
+                <Text style={styles.errorTitle}>Something went wrong</Text>
+                <Text style={styles.errorSubtitle}>{error}</Text>
+                {onRetry && (
+                    <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={onRetry}
+                    >
+                        <Text style={styles.retryButtonText}>Try Again</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+        );
+    }
+
+    // Only show empty state if we're not loading and have no data
+    if (!isLoading && dataLength === 0) {
+        return (
+            <View style={styles.centerContainer}>
+                {emptyIcon && (
+                    <View style={styles.emptyIcon}>
+                        {emptyIcon}
+                    </View>
+                )}
+                <Text style={styles.emptyTitle}>{emptyTitle}</Text>
+                <Text style={styles.emptySubtitle}>{emptySubtitle}</Text>
+            </View>
+        );
+    }
+
+    return null;
+});
+
+MemoizedEmptyComponent.displayName = 'MemoizedEmptyComponent';
+
+// Memoized item separator
+const MemoizedItemSeparator = React.memo<{
+    showItemSeparator: boolean;
+    itemSeparatorHeight: number;
+}>(({ showItemSeparator, itemSeparatorHeight }) => {
+    if (!showItemSeparator) return null;
+    return <View style={{ height: itemSeparatorHeight }} />;
+});
+
+MemoizedItemSeparator.displayName = 'MemoizedItemSeparator';
+
 export const InfiniteList = <T extends ListItem>({
     data,
     renderItem,
@@ -93,6 +217,8 @@ export const InfiniteList = <T extends ListItem>({
     onSearch,
     searchPlaceholder = 'Search...',
     showSearch = false,
+    isSearching = false,
+    searchDebounceMs = 500,
     emptyTitle = 'No items found',
     emptySubtitle = 'Try adjusting your search or refresh the list',
     emptyIcon,
@@ -108,31 +234,7 @@ export const InfiniteList = <T extends ListItem>({
     numColumns = 1,
     accessibilityLabel,
 }: InfiniteListProps<T>) => {
-    const [searchText, setSearchText] = useState(searchQuery);
     const flashListRef = useRef<FlashList<T>>(null);
-    const searchTimeoutRef = useRef<NodeJS.Timeout | number | null>(null);
-
-    // Handle search with debouncing
-    const handleSearchChange = useCallback((text: string) => {
-        setSearchText(text);
-
-        if (searchTimeoutRef.current) {
-            clearTimeout(searchTimeoutRef.current);
-        }
-
-        searchTimeoutRef.current = setTimeout(() => {
-            onSearch?.(text);
-        }, 300); // 300ms debounce
-    }, [onSearch]);
-
-    // Clean up search timeout
-    useEffect(() => {
-        return () => {
-            if (searchTimeoutRef.current) {
-                clearTimeout(searchTimeoutRef.current);
-            }
-        };
-    }, []);
 
     // Handle end reached with throttling
     const [isLoadingMoreThrottled, setIsLoadingMoreThrottled] = useState(false);
@@ -154,99 +256,60 @@ export const InfiniteList = <T extends ListItem>({
         return item.id?.toString() || index.toString();
     }, []);
 
-    // Item separator component
-    const ItemSeparator = useCallback(() => {
-        if (!showItemSeparator) return null;
-        return <View style={{ height: itemSeparatorHeight }} />;
-    }, [showItemSeparator, itemSeparatorHeight]);
-
-    // Loading footer component
-    const LoadingFooter = useCallback(() => {
-        if (!isLoadingMore) return null;
+    // Memoized refresh control
+    const memoizedRefreshControl = React.useMemo(() => {
+        if (!onRefresh) return undefined;
 
         return (
-            <View style={styles.loadingFooter}>
-                <ActivityIndicator
-                    size="small"
-                    color={colors.primary.main}
-                />
-                <Text style={styles.loadingText}>Loading more...</Text>
-            </View>
+            <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary.main}
+                colors={[colors.primary.main]}
+            />
         );
-    }, [isLoadingMore]);
+    }, [onRefresh, isRefreshing]);
 
-    // Empty state component
-    const EmptyComponent = useCallback(() => {
-        // Don't show empty component if we're loading initially
-        if (isLoading && data.length === 0) {
-            return null; // Let FlashList handle the loading state
-        }
+    // Memoized footer component
+    const memoizedFooterComponent = React.useMemo(() => (
+        <>
+            {ListFooterComponent}
+            <MemoizedLoadingFooter isLoadingMore={isLoadingMore} />
+        </>
+    ), [ListFooterComponent, isLoadingMore]);
 
-        if (error) {
-            return (
-                <View style={styles.centerContainer}>
-                    <Text style={styles.errorTitle}>Something went wrong</Text>
-                    <Text style={styles.errorSubtitle}>{error}</Text>
-                    {onRetry && (
-                        <TouchableOpacity
-                            style={styles.retryButton}
-                            onPress={onRetry}
-                        >
-                            <Text style={styles.retryButtonText}>Try Again</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-            );
-        }
-
-        // Only show empty state if we're not loading and have no data
-        if (!isLoading && data.length === 0) {
-            return (
-                <View style={styles.centerContainer}>
-                    {emptyIcon && (
-                        <View style={styles.emptyIcon}>
-                            {emptyIcon}
-                        </View>
-                    )}
-                    <Text style={styles.emptyTitle}>{emptyTitle}</Text>
-                    <Text style={styles.emptySubtitle}>{emptySubtitle}</Text>
-                </View>
-            );
-        }
-
-        return null;
-    }, [isLoading, error, emptyTitle, emptySubtitle, emptyIcon, onRetry, data.length]);
-
-    // Search input component
-    const SearchInput = useCallback(() => {
-        if (!showSearch) return null;
-
-        return (
-            <View style={styles.searchContainer}>
-                <TextInput
-                    style={styles.searchInput}
-                    value={searchText}
-                    onChangeText={handleSearchChange}
-                    placeholder={searchPlaceholder}
-                    placeholderTextColor={colors.text.disabled}
-                />
-            </View>
-        );
-    }, [showSearch, searchText, searchPlaceholder, handleSearchChange]);
-
-    // Refresh control
-    const refreshControl = onRefresh ? (
-        <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary.main}
-            colors={[colors.primary.main]}
+    // Memoized empty component
+    const memoizedEmptyComponent = React.useMemo(() => (
+        <MemoizedEmptyComponent
+            isLoading={isLoading}
+            error={error ?? null}
+            dataLength={data.length}
+            emptyTitle={emptyTitle}
+            emptySubtitle={emptySubtitle}
+            emptyIcon={emptyIcon}
+            onRetry={onRetry}
         />
-    ) : undefined;
+    ), [isLoading, error, data.length, emptyTitle, emptySubtitle, emptyIcon, onRetry]);
+
+    // Memoized item separator as a function component
+    const MemoizedItemSeparatorComponent = useCallback(() => (
+        <MemoizedItemSeparator
+            showItemSeparator={showItemSeparator}
+            itemSeparatorHeight={itemSeparatorHeight}
+        />
+    ), [showItemSeparator, itemSeparatorHeight]);
 
     return (
         <View style={styles.container}>
-            <SearchInput />
+            {/* Memoized Search Section */}
+            <MemoizedSearchSection
+                showSearch={showSearch}
+                searchQuery={searchQuery}
+                onSearch={onSearch}
+                searchPlaceholder={searchPlaceholder}
+                isSearching={isSearching}
+                searchDebounceMs={searchDebounceMs}
+            />
 
             {/* Show loading overlay during initial load */}
             {isLoading && data.length === 0 && (
@@ -266,16 +329,11 @@ export const InfiniteList = <T extends ListItem>({
                 keyExtractor={keyExtractor || defaultKeyExtractor}
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.1}
-                refreshControl={refreshControl}
-                ListEmptyComponent={EmptyComponent}
+                refreshControl={memoizedRefreshControl}
+                ListEmptyComponent={memoizedEmptyComponent}
                 ListHeaderComponent={ListHeaderComponent}
-                ListFooterComponent={
-                    <>
-                        {ListFooterComponent}
-                        <LoadingFooter />
-                    </>
-                }
-                ItemSeparatorComponent={ItemSeparator}
+                ListFooterComponent={memoizedFooterComponent}
+                ItemSeparatorComponent={MemoizedItemSeparatorComponent}
                 // FlashList requires estimatedItemSize instead of getItemLayout
                 estimatedItemSize={estimatedItemSize}
                 // Layout props
@@ -325,25 +383,6 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background.default,
     },
 
-    // Search styles
-    searchContainer: {
-        paddingHorizontal: spacingX._20,
-        paddingVertical: spacingY._10,
-        backgroundColor: colors.background.default,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border?.light || '#e1e5e9',
-    },
-    searchInput: {
-        height: verticalScale(40),
-        borderWidth: 1,
-        borderColor: colors.border?.main || '#d1d5db',
-        borderRadius: radius._10,
-        paddingHorizontal: spacingX._15,
-        fontSize: scaleFont(16),
-        color: colors.text.primary,
-        backgroundColor: colors.background.paper,
-    },
-
     // Loading states
     initialLoadingContainer: {
         position: 'absolute',
@@ -376,9 +415,6 @@ const styles = StyleSheet.create({
     },
 
     // Empty state
-    emptyContentContainer: {
-        flexGrow: 1,
-    },
     emptyIcon: {
         marginBottom: spacingY._20,
     },

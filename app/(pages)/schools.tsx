@@ -9,7 +9,7 @@ import { School } from '@/services/childrenServices';
 import { Ionicons } from '@expo/vector-icons';
 import { ListRenderItem } from '@shopify/flash-list';
 import { router } from 'expo-router';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
     Alert,
     StyleSheet,
@@ -40,12 +40,19 @@ const SchoolsScreen = () => {
         initialSearch: '',
     });
 
-    // Transform schools data to include id for the list
-    const listData: SchoolListItem[] = schools.map(school => ({
-        ...school,
-        id: school.schoolId,
-    }));
+    //#region States
+    const [isSearching, setIsSearching] = useState(false);
+    //#endregion
 
+    // Memoize the list data transformation
+    const listData: SchoolListItem[] = React.useMemo(() =>
+        schools.map(school => ({
+            ...school,
+            id: school.schoolId,
+        })), [schools]
+    );
+
+    // Memoized render item to prevent unnecessary re-renders
     const renderSchoolItem: ListRenderItem<SchoolListItem> = useCallback(({ item }) => (
         <SchoolItem
             school={item}
@@ -53,8 +60,9 @@ const SchoolsScreen = () => {
             onContact={handleContactSchool}
             onWebsite={handleSchoolWebsite}
         />
-    ), []);
+    ), []); // Empty deps since handlers are memoized below
 
+    // Memoized handlers
     const handleSchoolPress = useCallback((school: School) => {
         router.push({
             pathname: '/(pages)/school-details/[id]',
@@ -108,10 +116,20 @@ const SchoolsScreen = () => {
         }
     }, []);
 
+    // Memoized key extractor
     const keyExtractor = useCallback((item: SchoolListItem) =>
         item.schoolId.toString(),
         []);
 
+    // Memoized search handler with loading state
+    const handleSearch = useCallback((query: string) => {
+        setIsSearching(true);
+        search(query);
+        // Reset searching state after a delay (search should complete within this time)
+        setTimeout(() => setIsSearching(false), 1000);
+    }, [search]);
+
+    // Memoized list header
     const ListHeaderComponent = useCallback(() => (
         <View style={styles.header}>
             {totalCount > 0 && (
@@ -122,6 +140,7 @@ const SchoolsScreen = () => {
         </View>
     ), [totalCount]);
 
+    // Memoized empty icon
     const EmptyIcon = useCallback(() => (
         <Ionicons
             name="school-outline"
@@ -130,7 +149,7 @@ const SchoolsScreen = () => {
         />
     ), []);
 
-    const handleBack = React.useCallback(() => {
+    const handleBack = useCallback(() => {
         router.back();
     }, []);
 
@@ -152,23 +171,20 @@ const SchoolsScreen = () => {
                 isLoadingMore={isLoadingMore}
                 onRefresh={refresh}
                 isRefreshing={isRefreshing}
-                onSearch={search}
+                onSearch={handleSearch}
                 searchQuery={searchQuery}
                 showSearch={true}
+                isSearching={isSearching}
                 searchPlaceholder="Rechercher une école..."
+                searchDebounceMs={300} // Faster debounce for better UX
                 emptyTitle="Aucune école trouvée"
                 emptySubtitle="Aucune école n'est associée à votre compte ou ne correspond à votre recherche."
                 emptyIcon={<EmptyIcon />}
                 error={error}
                 onRetry={retry}
                 ListHeaderComponent={ListHeaderComponent}
-                estimatedItemSize={150} // Add this for FlashList (schools might be taller than children)
+                estimatedItemSize={150} // Estimated height for each school item (schools might be taller than children)
                 accessibilityLabel="Liste des écoles"
-            // Remove these FlatList-specific props:
-            // windowSize={10}
-            // maxToRenderPerBatch={10}
-            // removeClippedSubviews={true}
-            // contentContainerStyle={styles.listContainer} // Handled internally now
             />
         </ScreenView>
     );
@@ -177,7 +193,6 @@ const SchoolsScreen = () => {
 export default SchoolsScreen;
 
 const styles = StyleSheet.create({
-    // Remove listContainer since it's handled internally
     header: {
         paddingVertical: spacingY._20,
         paddingHorizontal: 4,

@@ -13,7 +13,7 @@ import { scale, scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import { ListRenderItem } from '@shopify/flash-list';
 import { router } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   StyleSheet,
@@ -26,6 +26,42 @@ interface MerchandiseListItem extends SchoolMerchandise {
   id: string | number;
 }
 
+// Memoized category option component
+const CategoryOption = React.memo<{
+  categoryId?: number;
+  title: string;
+  selectedCategory?: number;
+  onPress: (categoryId?: number) => void;
+}>(({ categoryId, title, selectedCategory, onPress }) => {
+  const isSelected = selectedCategory === categoryId;
+
+  const handlePress = useCallback(() => {
+    onPress(categoryId);
+  }, [onPress, categoryId]);
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.categoryOption,
+        isSelected && styles.categoryOptionSelected
+      ]}
+      onPress={handlePress}
+    >
+      <Text style={[
+        styles.categoryOptionText,
+        isSelected && styles.categoryOptionTextSelected
+      ]}>
+        {title}
+      </Text>
+      {isSelected && (
+        <Ionicons name="checkmark" size={scale(20)} color={colors.primary.main} />
+      )}
+    </TouchableOpacity>
+  );
+});
+
+CategoryOption.displayName = 'CategoryOption';
+
 const MerchandisesScreen = () => {
   const userInfo = useUserInfo();
 
@@ -33,11 +69,14 @@ const MerchandisesScreen = () => {
   // You might want to get this from navigation params or user's selected school
   const schoolId = userInfo?.schoolId || "2"; // Using "2" as default from your API example
 
-  console.log("schhhhhhh ::: ", schoolId)
+  console.log("schhhhhhh ::: ", schoolId);
 
+  //#region States
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [cartItems, setCartItems] = useState<SchoolMerchandise[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  //#endregion
 
   const {
     merchandises,
@@ -60,12 +99,22 @@ const MerchandisesScreen = () => {
     categoryId: selectedCategory,
   });
 
-  // Transform data for the list
-  const listData: MerchandiseListItem[] = merchandises.map(merchandise => ({
-    ...merchandise,
-    id: merchandise.schoolMerchandiseId,
-  }));
+  // Memoize the list data transformation
+  const listData: MerchandiseListItem[] = useMemo(() =>
+    merchandises.map(merchandise => ({
+      ...merchandise,
+      id: merchandise.schoolMerchandiseId,
+    })), [merchandises]
+  );
 
+  // Memoized cart calculations
+  const cartStats = useMemo(() => ({
+    count: cartItems.length,
+    total: cartItems.reduce((sum, item) => sum + item.schoolMerchandisePrice, 0),
+    itemsList: cartItems.map(item => `• ${item.schoolMerchandiseName}`).join('\n')
+  }), [cartItems]);
+
+  // Memoized render item to prevent unnecessary re-renders
   const renderMerchandiseItem: ListRenderItem<MerchandiseListItem> = useCallback(({ item }) => (
     <MerchandiseItem
       merchandise={item}
@@ -73,8 +122,9 @@ const MerchandisesScreen = () => {
       onAddToCart={handleAddToCart}
       showActions={true}
     />
-  ), []);
+  ), []); // Empty deps since handlers are memoized below
 
+  // Memoized handlers
   const handleMerchandisePress = useCallback((merchandise: SchoolMerchandise) => {
     // Navigate to merchandise details or show details modal
     Alert.alert(
@@ -128,33 +178,40 @@ const MerchandisesScreen = () => {
   }, [applyFilters, schoolId]);
 
   const handleViewCart = useCallback(() => {
-    if (cartItems.length === 0) {
+    if (cartStats.count === 0) {
       Alert.alert('Panier vide', 'Votre panier est vide.');
       return;
     }
 
-    const total = cartItems.reduce((sum, item) => sum + item.schoolMerchandisePrice, 0);
-    const itemsList = cartItems.map(item => `• ${item.schoolMerchandiseName}`).join('\n');
-
     Alert.alert(
-      `Panier (${cartItems.length} articles)`,
-      `${itemsList}\n\nTotal: ${total.toLocaleString()} CFA`,
+      `Panier (${cartStats.count} articles)`,
+      `${cartStats.itemsList}\n\nTotal: ${cartStats.total.toLocaleString()} CFA`,
       [
         { text: 'Continuer', style: 'cancel' },
         { text: 'Commander', onPress: () => handleCheckout() }
       ]
     );
-  }, [cartItems]);
+  }, [cartStats]);
 
   const handleCheckout = useCallback(() => {
     // Implement checkout logic here
     Alert.alert('Commande', 'Fonctionnalité de commande à implémenter.');
   }, []);
 
+  // Memoized key extractor
   const keyExtractor = useCallback((item: MerchandiseListItem) =>
     item.schoolMerchandiseId.toString(),
     []);
 
+  // Memoized search handler with loading state
+  const handleSearch = useCallback((query: string) => {
+    setIsSearching(true);
+    search(query);
+    // Reset searching state after a delay
+    setTimeout(() => setIsSearching(false), 1000);
+  }, [search]);
+
+  // Memoized list header
   const ListHeaderComponent = useCallback(() => (
     <View style={styles.header}>
       {totalCount > 0 && (
@@ -172,6 +229,7 @@ const MerchandisesScreen = () => {
     </View>
   ), [totalCount, selectedCategory]);
 
+  // Memoized empty icon
   const EmptyIcon = useCallback(() => (
     <Ionicons
       name="bag-outline"
@@ -180,7 +238,64 @@ const MerchandisesScreen = () => {
     />
   ), []);
 
-  const handleBack = React.useCallback(() => {
+  // Memoized header actions with cart color logic
+  const headerActions = useMemo(() => [
+    {
+      icon: 'options-outline' as keyof typeof Ionicons.glyphMap,
+      onPress: handleOpenFilter,
+      color: colors.primary.main,
+    },
+    {
+      icon: 'cart-outline' as keyof typeof Ionicons.glyphMap,
+      onPress: handleViewCart,
+      color: cartStats.count > 0 ? colors.success.main : colors.text.secondary,
+    }
+  ], [handleOpenFilter, handleViewCart, cartStats.count]);
+
+  // Memoized filter modal content
+  const FilterModalContent = useMemo(() => (
+    <View style={styles.filterModalContent}>
+      <CategoryOption
+        title="Toutes les catégories"
+        selectedCategory={selectedCategory}
+        onPress={handleApplyFilter}
+      />
+      <CategoryOption
+        categoryId={3}
+        title="Sacs et accessoires"
+        selectedCategory={selectedCategory}
+        onPress={handleApplyFilter}
+      />
+      <CategoryOption
+        categoryId={7}
+        title="Fournitures scolaires"
+        selectedCategory={selectedCategory}
+        onPress={handleApplyFilter}
+      />
+      <CategoryOption
+        categoryId={8}
+        title="Bouteilles et gourdes"
+        selectedCategory={selectedCategory}
+        onPress={handleApplyFilter}
+      />
+
+      {/* Action Buttons */}
+      <View style={styles.filterActions}>
+        <SecondaryButton
+          title="Effacer"
+          onPress={handleClearFilter}
+          style={styles.filterButton}
+        />
+        <PrimaryButton
+          title="Fermer"
+          onPress={handleCloseFilter}
+          style={styles.filterButton}
+        />
+      </View>
+    </View>
+  ), [selectedCategory, handleApplyFilter, handleClearFilter, handleCloseFilter]);
+
+  const handleBack = useCallback(() => {
     router.back();
   }, []);
 
@@ -207,24 +322,13 @@ const MerchandisesScreen = () => {
       <PageHeader
         title="Marchandises"
         onBack={handleBack}
-        actions={[
-          {
-            icon: 'options-outline',
-            onPress: handleOpenFilter,
-            color: colors.primary.main,
-          },
-          {
-            icon: 'cart-outline',
-            onPress: handleViewCart,
-            color: cartItems.length > 0 ? colors.success.main : colors.text.secondary,
-          }
-        ]}
+        actions={headerActions}
       />
 
       {/* Cart Badge */}
-      {cartItems.length > 0 && (
+      {cartStats.count > 0 && (
         <View style={styles.cartBadge}>
-          <Text style={styles.cartBadgeText}>{cartItems.length}</Text>
+          <Text style={styles.cartBadgeText}>{cartStats.count}</Text>
         </View>
       )}
 
@@ -239,10 +343,12 @@ const MerchandisesScreen = () => {
         isLoadingMore={isLoadingMore}
         onRefresh={refresh}
         isRefreshing={isRefreshing}
-        onSearch={search}
+        onSearch={handleSearch}
         searchQuery={searchQuery}
         showSearch={true}
+        isSearching={isSearching}
         searchPlaceholder="Rechercher un article..."
+        searchDebounceMs={300} // Faster debounce for better UX
         emptyTitle="Aucun article trouvé"
         emptySubtitle="Aucun article n'est disponible pour cette école ou ne correspond à votre recherche."
         emptyIcon={<EmptyIcon />}
@@ -261,94 +367,7 @@ const MerchandisesScreen = () => {
         subtitle="Choisissez une catégorie"
         height="auto"
       >
-        <View style={styles.filterModalContent}>
-          {/* Category filters - you can expand this with actual categories */}
-          <TouchableOpacity
-            style={[
-              styles.categoryOption,
-              !selectedCategory && styles.categoryOptionSelected
-            ]}
-            onPress={() => handleApplyFilter(undefined)}
-          >
-            <Text style={[
-              styles.categoryOptionText,
-              !selectedCategory && styles.categoryOptionTextSelected
-            ]}>
-              Toutes les catégories
-            </Text>
-            {!selectedCategory && (
-              <Ionicons name="checkmark" size={scale(20)} color={colors.primary.main} />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.categoryOption,
-              selectedCategory === 3 && styles.categoryOptionSelected
-            ]}
-            onPress={() => handleApplyFilter(3)}
-          >
-            <Text style={[
-              styles.categoryOptionText,
-              selectedCategory === 3 && styles.categoryOptionTextSelected
-            ]}>
-              Sacs et accessoires
-            </Text>
-            {selectedCategory === 3 && (
-              <Ionicons name="checkmark" size={scale(20)} color={colors.primary.main} />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.categoryOption,
-              selectedCategory === 7 && styles.categoryOptionSelected
-            ]}
-            onPress={() => handleApplyFilter(7)}
-          >
-            <Text style={[
-              styles.categoryOptionText,
-              selectedCategory === 7 && styles.categoryOptionTextSelected
-            ]}>
-              Fournitures scolaires
-            </Text>
-            {selectedCategory === 7 && (
-              <Ionicons name="checkmark" size={scale(20)} color={colors.primary.main} />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.categoryOption,
-              selectedCategory === 8 && styles.categoryOptionSelected
-            ]}
-            onPress={() => handleApplyFilter(8)}
-          >
-            <Text style={[
-              styles.categoryOptionText,
-              selectedCategory === 8 && styles.categoryOptionTextSelected
-            ]}>
-              Bouteilles et gourdes
-            </Text>
-            {selectedCategory === 8 && (
-              <Ionicons name="checkmark" size={scale(20)} color={colors.primary.main} />
-            )}
-          </TouchableOpacity>
-
-          {/* Action Buttons */}
-          <View style={styles.filterActions}>
-            <SecondaryButton
-              title="Effacer"
-              onPress={handleClearFilter}
-              style={styles.filterButton}
-            />
-            <PrimaryButton
-              title="Fermer"
-              onPress={handleCloseFilter}
-              style={styles.filterButton}
-            />
-          </View>
-        </View>
+        {FilterModalContent}
       </BottomModal>
     </ScreenView>
   );
