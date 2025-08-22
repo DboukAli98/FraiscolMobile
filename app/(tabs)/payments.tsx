@@ -225,6 +225,7 @@ const PaymentsScreen: React.FC = () => {
         console.error('❌ Payment initiation failed:', response.error);
 
         const errorMessage = response.error?.message || response.error || 'Échec de l\'initiation du paiement';
+        console.log("error message :::: ", errorMessage)
         Alert.alert(
           'Erreur de paiement',
           `Impossible d'initier le paiement: ${errorMessage}\n\nVeuillez réessayer.`,

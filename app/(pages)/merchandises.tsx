@@ -67,7 +67,7 @@ const MerchandisesScreen = () => {
 
   // For now, we'll use a hardcoded school ID or get it from user info
   // You might want to get this from navigation params or user's selected school
-  const schoolId = userInfo?.schoolId || "2"; // Using "2" as default from your API example
+  const schoolId = userInfo?.schoolId || "0"; // Using "2" as default from your API example
 
   console.log("schhhhhhh ::: ", schoolId);
 

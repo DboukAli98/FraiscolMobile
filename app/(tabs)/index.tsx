@@ -478,7 +478,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    width: '100%',
+
     gap: spacingX._5,
+
   },
   actionCard: {
     width: '30%',
