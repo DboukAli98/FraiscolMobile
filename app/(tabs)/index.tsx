@@ -1,6 +1,6 @@
 // app/(tabs)/index.tsx
 import { BottomModal } from '@/components/BottomModal/BottomModal';
-import { Card, CardBody, CardHeader } from '@/components/Card/CardComponent';
+import { Card, CardBody } from '@/components/Card/CardComponent';
 import { CustomInput } from '@/components/CustomInput/CustomInput';
 import { GhostIconButton } from '@/components/IconButton/IconButton';
 import { IconLabelCard } from '@/components/IconLabelCard/IconLabelCard';
@@ -186,17 +186,19 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.container}>
-          {/* Header */}
+          {/* Header (modern) */}
           <View style={styles.header}>
-            <View style={styles.greetingSection}>
-              <Text style={styles.nameTextGreeting}>
-                Bonjour,
-              </Text>
-              <Text style={styles.nameText}>
-                {userInfo?.name || ""}
-              </Text>
+            <View style={styles.headerLeft}>
+              <View style={styles.avatar}>
+                <Ionicons name="person" size={24} color={colors.text.white} />
+              </View>
+              <View style={styles.greetingSection}>
+                <Text style={styles.smallGreeting}>Bonjour</Text>
+                <Text style={styles.nameText}>{userInfo?.name || ""}</Text>
+              </View>
             </View>
-            <View style={styles.quickActionsSection}>
+
+            <View style={styles.headerRight}>
               <GhostIconButton
                 iconName="notifications-outline"
                 size="md"
@@ -212,38 +214,52 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Total Fees Card */}
+          {/* Total Fees Card (prominent CTA) */}
           <Card borderRadius={"_10"} style={styles.cardContainer}>
-            <CardHeader titleStyle={styles.cardHeaderTitleStyle} title='Total à payer ce mois-ci' />
             <CardBody style={styles.mainCardBody}>
-              {loading ? (
-                <Text style={styles.loadingText}>Chargement...</Text>
-              ) : (
-                <>
-                  <Text style={styles.mainCardAmountText}>{totalFees}</Text>
-                  <Text style={styles.mainCardCurrencyText}>CFA</Text>
-                </>
-              )}
+              <View style={styles.totalRow}>
+                <View>
+                  <Text style={styles.cardHeaderTitleStyle}>Total à payer ce mois-ci</Text>
+                  {loading ? (
+                    <Text style={styles.loadingText}>Chargement...</Text>
+                  ) : (
+                    <View style={styles.amountRow}>
+                      <Text style={styles.mainCardAmountText}>{totalFees}</Text>
+                      <Text style={styles.mainCardCurrencyText}>CFA</Text>
+                    </View>
+                  )}
+                </View>
+
+                <TouchableOpacity style={styles.payNowButton} onPress={() => router.push('/(tabs)/payments')}>
+                  <Text style={styles.payNowButtonText}>Payer maintenant</Text>
+                </TouchableOpacity>
+              </View>
             </CardBody>
           </Card>
 
-          {/* Quick Actions */}
-          <View style={styles.quickActionsSection}>
+          {/* Quick Actions (horizontal, elevated) */}
+          <View style={styles.quickActionsWrapper}>
             <Text style={styles.sectionTitle}>Actions Rapides</Text>
-            <View style={styles.actionsGrid}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actionsScroll}>
               {QuickActionData.map((action) => (
-                <IconLabelCard
+                <TouchableOpacity
                   key={action.id}
-                  imageSource={action.img}
-                  label={action.label}
-                  size="sm"
-                  labelStyle={styles.actionCardLabelStyle}
+                  style={styles.actionCard}
                   onPress={() => handleQuickAction(action)}
                   accessibilityLabel={`Accéder à ${action.label}`}
-                  style={styles.actionCard}
-                />
+                >
+                  <View style={styles.actionIconWrap}>
+                    <IconLabelCard
+                      imageSource={action.img}
+                      label={action.label}
+                      size="sm"
+                      labelStyle={styles.actionCardLabelStyle}
+                      style={{ backgroundColor: 'transparent', elevation: 0 }}
+                    />
+                  </View>
+                </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           </View>
 
           {/* Recent Transactions */}
@@ -430,6 +446,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignContent: "center",
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: scale(48),
+    height: scale(48),
+    borderRadius: scale(12),
+    backgroundColor: colors.primary.main,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacingX._10,
+  },
+  smallGreeting: {
+    ...getTextStyle('sm', 'medium', colors.text.secondary),
+    marginBottom: spacingY._3,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacingX._7,
+  },
   greetingSection: {
     alignItems: 'flex-start'
   },
@@ -458,6 +496,29 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  totalRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacingX._10,
+  },
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacingX._5,
+  },
+  payNowButton: {
+    backgroundColor: colors.primary.main,
+    paddingVertical: spacingY._7,
+    paddingHorizontal: spacingX._12,
+    borderRadius: 12,
+  },
+  payNowButtonText: {
+    color: colors.text.white,
+    fontWeight: '700',
+    fontSize: scaleFont(13),
+  },
   mainCardAmountText: {
     ...getTextStyle('3xl', 'bold', colors.text.secondary),
     textAlign: "center"
@@ -484,12 +545,29 @@ const styles = StyleSheet.create({
 
   },
   actionCard: {
-    width: '30%',
-    marginBottom: spacingY._15,
+    width: scale(120),
+    height: scale(100),
+    marginRight: spacingX._10,
+    marginBottom: spacingY._10,
     backgroundColor: colors.background.default,
+    borderRadius: 12,
+    elevation: 3,
+    padding: spacingX._7,
   },
   actionCardLabelStyle: {
     ...getTextStyle('xs', 'medium', colors.text.secondary),
+  },
+  quickActionsWrapper: {
+    marginTop: spacingY._15,
+  },
+  actionsScroll: {
+    paddingVertical: spacingY._5,
+    paddingRight: spacingX._10,
+  },
+  actionIconWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   // Transactions Section
