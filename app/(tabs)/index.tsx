@@ -9,8 +9,9 @@ import { ScreenView } from '@/components/ScreenView/ScreenView';
 import {
   colors,
   getTextStyle,
+  shadows,
   spacingX,
-  spacingY
+  spacingY,
 } from '@/constants/theme';
 import { QuickActionData, QuickActionItem } from '@/GeneralData/GeneralData';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -21,7 +22,7 @@ import { RecentPaymentTransactionDto, useGetParentCurrentMonthTotalFees, useLogo
 import { SCREEN_HEIGHT, scale, scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   RefreshControl,
@@ -45,6 +46,7 @@ export default function HomeScreen() {
   const [totalFees, setTotalFees] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [periodMenuVisible, setPeriodMenuVisible] = useState(false);
   //#endregion
 
   //#region Recent Transactions Hook
@@ -54,7 +56,6 @@ export default function HomeScreen() {
     transactions,
     summary,
     isLoading: transactionsLoading,
-    isRefreshing: transactionsRefreshing,
     error: transactionsError,
     refresh: refreshTransactions,
     retry: retryTransactions,
@@ -68,7 +69,7 @@ export default function HomeScreen() {
   //#endregion
 
   //#region Fetchings
-  const fetchParentCurrentMonthTotalFee = async () => {
+  const fetchParentCurrentMonthTotalFee = useCallback(async () => {
     try {
       setLoading(true);
       const parentIdNum = typeof userInfo?.parentId === 'number'
@@ -84,13 +85,13 @@ export default function HomeScreen() {
         console.log("error in fetching parent total fee ::: ", error);
       }
 
-    } catch (error) {
-      console.log("internal error in fetching parent total fee ::: ", error);
+    } catch (_error) {
+      console.log("error in fetching parent total fee ::: ", _error);
       setTotalFees("0");
     } finally {
       setLoading(false);
     }
-  };
+  }, [userInfo?.parentId]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -168,7 +169,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     fetchParentCurrentMonthTotalFee();
-  }, [userInfo?.parentId]);
+  }, [userInfo?.parentId, fetchParentCurrentMonthTotalFee]);
   //#endregion
 
   return (
@@ -268,27 +269,50 @@ export default function HomeScreen() {
               <Text style={styles.sectionTitle}>Transactions récentes</Text>
               <View style={styles.transactionsHeaderActions}>
                 {summary && (
-                  <TouchableOpacity
-                    style={styles.periodButton}
-                    onPress={() => {
-                      Alert.alert(
-                        'Changer la période',
-                        'Sélectionnez la période à afficher',
-                        [
-                          { text: 'Semaine', onPress: () => handleChangePeriod('week') },
-                          { text: 'Mois', onPress: () => handleChangePeriod('month') },
-                          { text: 'Tout', onPress: () => handleChangePeriod('all') },
-                          { text: 'Annuler', style: 'cancel' },
-                        ]
-                      );
-                    }}
-                  >
-                    <Text style={styles.periodButtonText}>
-                      {summary.timePeriod === 'week' ? 'Semaine' :
-                        summary.timePeriod === 'month' ? 'Mois' : 'Tout'}
-                    </Text>
-                    <Ionicons name="chevron-down" size={scale(14)} color={colors.primary.main} />
-                  </TouchableOpacity>
+                  <>
+                    <TouchableOpacity
+                      style={styles.periodButton}
+                      onPress={() => setPeriodMenuVisible((v) => !v)}
+                    >
+                      <Text style={styles.periodButtonText}>
+                        {summary.timePeriod === 'week' ? 'Semaine' :
+                          summary.timePeriod === 'month' ? 'Mois' : 'Tout'}
+                      </Text>
+                      <Ionicons name={periodMenuVisible ? "chevron-up" : "chevron-down"} size={scale(14)} color={colors.primary.main} />
+                    </TouchableOpacity>
+
+                    {periodMenuVisible && (
+                      <View style={styles.periodMenu}>
+                        <TouchableOpacity
+                          style={styles.periodMenuItem}
+                          onPress={() => {
+                            handleChangePeriod('week');
+                            setPeriodMenuVisible(false);
+                          }}
+                        >
+                          <Text style={styles.periodMenuItemText}>Semaine</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.periodMenuItem}
+                          onPress={() => {
+                            handleChangePeriod('month');
+                            setPeriodMenuVisible(false);
+                          }}
+                        >
+                          <Text style={styles.periodMenuItemText}>Mois</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.periodMenuItem}
+                          onPress={() => {
+                            handleChangePeriod('all');
+                            setPeriodMenuVisible(false);
+                          }}
+                        >
+                          <Text style={styles.periodMenuItemText}>Tout</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </>
                 )}
 
                 {transactions.length > 0 && (
@@ -573,6 +597,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  // Period dropdown menu
+  periodMenu: {
+    position: 'absolute',
+    top: spacingY._40,
+    right: 0,
+    backgroundColor: colors.background.default,
+    borderRadius: 8,
+    paddingVertical: spacingY._5,
+    paddingHorizontal: spacingX._5,
+    ...shadows.md,
+    zIndex: 10,
+  },
+  periodMenuItem: {
+    paddingVertical: spacingY._5,
+    paddingHorizontal: spacingX._10,
+  },
+  periodMenuItemText: {
+    fontSize: scaleFont(13),
+    color: colors.text.primary,
   },
 
   // Transactions Section
