@@ -485,11 +485,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cardContainer: {
-    backgroundColor: colors.background.default,
+    backgroundColor: colors.primary.light,
+    padding: spacingX._12,
+    borderRadius: 14,
+    // subtle shadow
+    elevation: 4,
   },
   cardHeaderTitleStyle: {
-    ...getTextStyle('md', 'bold', colors.text.secondary),
-    textAlign: "center"
+    ...getTextStyle('md', 'bold', colors.text.white),
+    textAlign: "left"
   },
   mainCardBody: {
     display: "flex",
@@ -520,12 +524,13 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(13),
   },
   mainCardAmountText: {
-    ...getTextStyle('3xl', 'bold', colors.text.secondary),
-    textAlign: "center"
+    ...getTextStyle('3xl', 'bold', colors.text.white),
+    textAlign: "left"
   },
   mainCardCurrencyText: {
-    ...getTextStyle('xl', 'bold', colors.text.secondary),
-    textAlign: "center"
+    ...getTextStyle('xl', 'bold', colors.text.white),
+    textAlign: "left",
+    marginLeft: spacingX._7,
   },
   loadingText: {
     ...getTextStyle('md', 'normal', colors.text.secondary),
