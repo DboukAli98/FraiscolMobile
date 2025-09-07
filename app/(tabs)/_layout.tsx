@@ -1,5 +1,6 @@
 // app/(tabs)/_layout.tsx
 import { colors } from '@/constants/theme';
+import useUserInfo from '@/hooks/useUserInfo';
 import { RootState } from '@/redux/store';
 import CustomRoutes from '@/routes/CustomRoutes';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -11,10 +12,16 @@ import { useSelector } from 'react-redux';
 
 export default function TabsLayout() {
   const token = useSelector((state: RootState) => state.auth.token);
+  const userInfo = useUserInfo();
   const insets = useSafeAreaInsets();
 
   if (!token) {
     return <Redirect href="/(auth)/login" />;
+  }
+
+  // If the logged in user is an Agent, redirect them to Agent tabs
+  if (userInfo?.role === 'Agent') {
+    return <Redirect href="/(agent)/dashboard" />;
   }
 
   return (

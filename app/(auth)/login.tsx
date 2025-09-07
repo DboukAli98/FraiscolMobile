@@ -1,19 +1,18 @@
 // app/(auth)/login.tsx
+import { PrimaryButton } from '@/components/Button/CustomPressable';
+import { CustomInput } from '@/components/CustomInput/CustomInput';
 import { setCredentials } from '@/redux/slices/authSlice';
 import type { AppDispatch } from '@/redux/store';
 import { useLogin } from '@/services/userServices';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useDispatch } from 'react-redux';
@@ -24,7 +23,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [civilId, setCivilId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  // Using CustomInput password variant (built-in visibility toggle)
 
   const dispatch = useDispatch<AppDispatch>();
   const authenticate = useLogin();
@@ -67,7 +66,7 @@ export default function LoginScreen() {
           error?.message || 'Invalid credentials. Please try again.'
         );
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -88,72 +87,58 @@ export default function LoginScreen() {
 
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Code du pays</Text>
-              <TextInput
-                style={styles.input}
+              <CustomInput
+                label="Code du pays"
                 value={countryCode}
                 onChangeText={setCountryCode}
                 placeholder="+965"
-                keyboardType="phone-pad"
+                inputType="phone"
+                leftIcon="flag-outline"
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Numéro de portable</Text>
-              <TextInput
-                style={styles.input}
+              <CustomInput
+                label="Numéro de portable"
                 value={mobileNumber}
                 onChangeText={setMobileNumber}
                 placeholder="Enter your mobile number"
-                keyboardType="phone-pad"
-                autoCapitalize="none"
+                inputType="phone"
+                leftIcon="call-outline"
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>{"Pièce d'identité civile (facultatif)"}</Text>
-              <TextInput
-                style={styles.input}
+              <CustomInput
+                label={"Pièce d'identité civile (facultatif)"}
                 value={civilId}
                 onChangeText={setCivilId}
                 placeholder="Enter your civil ID"
-                keyboardType="numeric"
+                inputType="number"
+                leftIcon="card-outline"
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Mot de passe</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={[styles.input, styles.passwordInput]}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Enter your password"
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Text style={styles.eyeText}>
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <CustomInput
+                label="Mot de passe"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter your password"
+                inputType="password"
+                leftIcon="lock-closed-outline"
+              />
             </View>
 
-            <TouchableOpacity
-              style={[styles.button, isLoading && styles.buttonDisabled]}
+            <PrimaryButton
+              title="Se connecter"
               onPress={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.buttonText}>Se connecter</Text>
-              )}
-            </TouchableOpacity>
+              loading={isLoading}
+              fullWidth
+              shadow
+              accessibilityLabel="Se connecter"
+              style={{ marginTop: 24 }}
+            />
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>
@@ -220,44 +205,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: '#1f2937',
-  },
-  passwordContainer: {
-    position: 'relative',
-  },
-  passwordInput: {
-    paddingRight: 50,
-  },
-  eyeButton: {
-    position: 'absolute',
-    right: 16,
-    top: 14,
-    padding: 4,
-  },
-  eyeText: {
-    fontSize: 20,
-  },
-  button: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 24,
-    shadowColor: '#3b82f6',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   footer: {
     alignItems: 'center',

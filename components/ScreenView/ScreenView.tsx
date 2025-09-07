@@ -3,13 +3,12 @@ import { colors, shapes } from '@/constants/theme';
 import React from 'react';
 import {
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   View,
   ViewStyle
 } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 interface ScreenViewProps {
@@ -51,26 +50,26 @@ export const ScreenView: React.FC<ScreenViewProps> = ({
     if (customPadding !== undefined) {
       return { padding: customPadding };
     }
-    
+
     if (paddingHorizontal && paddingVertical) {
-      return { 
+      return {
         paddingHorizontal: shapes.initialPadding,
-        paddingVertical: shapes.initialPadding 
+        paddingVertical: shapes.initialPadding
       };
     }
-    
+
     if (paddingHorizontal) {
       return { paddingHorizontal: shapes.initialPadding };
     }
-    
+
     if (paddingVertical) {
       return { paddingVertical: shapes.initialPadding };
     }
-    
+
     if (padding) {
       return { padding: shapes.initialPadding };
     }
-    
+
     return {};
   };
 
@@ -87,7 +86,6 @@ export const ScreenView: React.FC<ScreenViewProps> = ({
   };
 
   const ContentWrapper = scrollable ? ScrollView : View;
-  const RootWrapper = safeArea ? SafeAreaView : View;
 
   const scrollViewProps = scrollable ? {
     showsVerticalScrollIndicator: false,
@@ -102,21 +100,19 @@ export const ScreenView: React.FC<ScreenViewProps> = ({
   if (safeArea) {
     return (
       <>
-        <StatusBar 
+        <StatusBar
           barStyle={statusBarStyle}
           backgroundColor={statusBarBackgroundColor || backgroundColor}
           translucent={false}
         />
-        <SafeAreaProvider style={safeAreaStyle}>
-       
-          <ContentWrapper 
+        <SafeAreaView style={safeAreaStyle}>
+          <ContentWrapper
             style={scrollable ? { flex: 1 } : [contentContainerStyle, contentStyle]}
             {...scrollViewProps}
           >
             {children}
           </ContentWrapper>
-       
-        </SafeAreaProvider>
+        </SafeAreaView>
       </>
     );
   }
@@ -124,12 +120,12 @@ export const ScreenView: React.FC<ScreenViewProps> = ({
   // Without SafeAreaView
   return (
     <>
-      <StatusBar 
+      <StatusBar
         barStyle={statusBarStyle}
         backgroundColor={statusBarBackgroundColor || backgroundColor}
         translucent={Platform.OS === 'android'}
       />
-      <ContentWrapper 
+      <ContentWrapper
         style={scrollable ? { flex: 1, backgroundColor } : [{ flex: 1, backgroundColor }, contentContainerStyle, contentStyle]}
         {...scrollViewProps}
       >
@@ -159,9 +155,9 @@ interface QuickScreenViewProps extends Omit<ScreenViewProps, 'scrollable' | 'pad
   variant?: ScreenViewVariant;
 }
 
-export const QuickScreenView: React.FC<QuickScreenViewProps> = ({ 
-  variant = 'default', 
-  ...props 
+export const QuickScreenView: React.FC<QuickScreenViewProps> = ({
+  variant = 'default',
+  ...props
 }) => {
   switch (variant) {
     case 'scrollable':
