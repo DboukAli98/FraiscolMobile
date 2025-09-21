@@ -1,12 +1,12 @@
 // app/(auth)/login.tsx
 import { PrimaryButton } from '@/components/Button/CustomPressable';
 import { CustomInput } from '@/components/CustomInput/CustomInput';
+import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { setCredentials } from '@/redux/slices/authSlice';
 import type { AppDispatch } from '@/redux/store';
 import { useLogin } from '@/services/userServices';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { ScreenView } from '@/components/ScreenView/ScreenView';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -82,75 +82,75 @@ export default function LoginScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Bienvenue</Text>
-            <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
-          </View>
-
-          <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <CustomInput
-                label="Code du pays"
-                value={countryCode}
-                onChangeText={setCountryCode}
-                placeholder="+965"
-                inputType="phone"
-                leftIcon="flag-outline"
-              />
+            <View style={styles.header}>
+              <Text style={styles.title}>Bienvenue</Text>
+              <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
             </View>
 
-            <View style={styles.inputGroup}>
-              <CustomInput
-                label="Numéro de portable"
-                value={mobileNumber}
-                onChangeText={setMobileNumber}
-                placeholder="Enter your mobile number"
-                inputType="phone"
-                leftIcon="call-outline"
+            <View style={styles.form}>
+              <View style={styles.inputGroup}>
+                <CustomInput
+                  label="Code du pays"
+                  value={countryCode}
+                  onChangeText={setCountryCode}
+                  placeholder="+965"
+                  inputType="phone"
+                  leftIcon="flag-outline"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <CustomInput
+                  label="Numéro de portable"
+                  value={mobileNumber}
+                  onChangeText={setMobileNumber}
+                  placeholder="Enter your mobile number"
+                  inputType="phone"
+                  leftIcon="call-outline"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <CustomInput
+                  label={"Pièce d'identité civile (facultatif)"}
+                  value={civilId}
+                  onChangeText={setCivilId}
+                  placeholder="Enter your civil ID"
+                  inputType="number"
+                  leftIcon="card-outline"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <CustomInput
+                  label="Mot de passe"
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Enter your password"
+                  inputType="password"
+                  leftIcon="lock-closed-outline"
+                />
+              </View>
+
+              <PrimaryButton
+                title="Se connecter"
+                onPress={handleLogin}
+                loading={isLoading}
+                fullWidth
+                shadow
+                accessibilityLabel="Se connecter"
+                style={{ marginTop: 24 }}
               />
-            </View>
 
-            <View style={styles.inputGroup}>
-              <CustomInput
-                label={"Pièce d'identité civile (facultatif)"}
-                value={civilId}
-                onChangeText={setCivilId}
-                placeholder="Enter your civil ID"
-                inputType="number"
-                leftIcon="card-outline"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <CustomInput
-                label="Mot de passe"
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Enter your password"
-                inputType="password"
-                leftIcon="lock-closed-outline"
-              />
-            </View>
-
-            <PrimaryButton
-              title="Se connecter"
-              onPress={handleLogin}
-              loading={isLoading}
-              fullWidth
-              shadow
-              accessibilityLabel="Se connecter"
-              style={{ marginTop: 24 }}
-            />
-
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>
-                {"Vous n'avez pas de compte ?"}{' '}
-                {/* <Link href="/(auth)/register" style={styles.link}>
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>
+                  {"Vous n'avez pas de compte ?"}{' '}
+                  {/* <Link href="/(auth)/register" style={styles.link}>
                   Sign up
                 </Link> */}
-              </Text>
+                </Text>
+              </View>
             </View>
-          </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
