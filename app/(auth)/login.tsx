@@ -6,6 +6,7 @@ import type { AppDispatch } from '@/redux/store';
 import { useLogin } from '@/services/userServices';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import { ScreenView } from '@/components/ScreenView/ScreenView';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -74,12 +75,13 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.content}>
+    <ScreenView safeArea={true} backgroundColor={styles.container.backgroundColor}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.title}>Bienvenue</Text>
             <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
@@ -149,9 +151,10 @@ export default function LoginScreen() {
               </Text>
             </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenView>
   );
 }
 
