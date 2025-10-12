@@ -30,6 +30,9 @@ const PendingChildrenScreen = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Use ref to track last fetched parentId to prevent infinite loops
+    const lastParentIdRef = React.useRef<number | null>(null);
+
     const fetchChildren = useCallback(async (refresh = false) => {
         const parentId = parentData?.parentId || (userInfo?.parentId ? parseInt(userInfo.parentId) : null);
         if (!parentId) return;
@@ -59,11 +62,18 @@ const PendingChildrenScreen = () => {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [parentData?.parentId, userInfo?.parentId]);
+    }, [parentData?.parentId, userInfo?.parentId, getPendingRejectedChildrens]);
 
     useEffect(() => {
+        const parentId = parentData?.parentId || (userInfo?.parentId ? parseInt(userInfo.parentId) : null);
+
+        // Only fetch if parentId exists and has changed
+        if (!parentId || parentId === lastParentIdRef.current) return;
+
+        lastParentIdRef.current = parentId;
         fetchChildren();
-    }, [fetchChildren]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [parentData?.parentId, userInfo?.parentId]);
 
     const handleRefresh = () => {
         fetchChildren(true);
