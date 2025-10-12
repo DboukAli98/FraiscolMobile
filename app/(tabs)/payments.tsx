@@ -17,7 +17,7 @@ import {
   useGetGradeSectionsForFilter,
   useGetSchoolsForFilter
 } from '@/services/userServices';
-import { scale, scaleFont } from '@/utils/stylings';
+import { scale, scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -492,8 +492,8 @@ const PaymentsScreen: React.FC = () => {
         onClose={handleCloseFilterModal}
         title="Filtrer les paiements"
         subtitle="Affinez votre recherche"
-        height="auto"
-        enableDragToExpand={false}
+        height={SCREEN_HEIGHT * 0.9}
+        enableDragToExpand={true}
       >
         <View style={styles.filterModalContent}>
           {loadingFilterOptions ? (
