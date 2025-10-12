@@ -179,8 +179,8 @@ const MemoizedEmptyComponent = React.memo<{
     if (!isLoading && dataLength === 0) {
         // Use custom empty component if provided
         if (customEmptyComponent) {
-            return React.isValidElement(customEmptyComponent) 
-                ? customEmptyComponent 
+            return React.isValidElement(customEmptyComponent)
+                ? customEmptyComponent
                 : React.createElement(customEmptyComponent);
         }
 
