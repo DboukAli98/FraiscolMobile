@@ -1,4 +1,5 @@
 // app/(tabs)/settings.tsx
+import { PendingChildrenSummary } from '@/components/PendingChildrenSummary/PendingChildrenSummary';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { colors, spacingX, spacingY } from '@/constants/theme';
 import { useParentProfile } from '@/hooks/useParentProfile';
@@ -201,6 +202,9 @@ const SettingsScreen = () => {
           subtitle="Voir tous les paiements effectués"
           onPress={() => router.push('/(pages)/paymenthistory')}
         />
+
+        {/* Pending/Rejected Children Summary */}
+        <PendingChildrenSummary />
 
         {/* App Settings */}
         <SectionHeader title="Préférences de l'application" />

@@ -19,6 +19,7 @@ import {
     Alert,
     StyleSheet,
     Text,
+    TouchableOpacity,
     View,
 } from 'react-native';
 
@@ -192,6 +193,27 @@ const ChildrensScreen = () => {
         />
     ), []);
 
+    // Memoized custom empty component with link to pending children
+    const CustomEmptyComponent = useCallback(() => (
+        <View style={styles.emptyContainer}>
+            <EmptyIcon />
+            <Text style={styles.emptyTitle}>Aucun enfant trouvé</Text>
+            <Text style={styles.emptySubtitle}>
+                Vous n&apos;avez encore ajouté aucun enfant ou aucun enfant ne correspond à votre recherche.
+            </Text>
+            <TouchableOpacity
+                style={styles.pendingLink}
+                onPress={() => router.push('/(pages)/pending-children')}
+            >
+                <Ionicons name="time-outline" size={20} color={colors.primary.main} />
+                <Text style={styles.pendingLinkText}>
+                    Voir les enfants en attente d&apos;approbation
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.primary.main} />
+            </TouchableOpacity>
+        </View>
+    ), [EmptyIcon]);
+
     const handleBack = useCallback(() => {
         router.back();
     }, []);
@@ -286,9 +308,7 @@ const ChildrensScreen = () => {
                 isSearching={isSearching}
                 searchPlaceholder="Rechercher un enfant..."
                 searchDebounceMs={300} // Faster debounce for better UX
-                emptyTitle="Aucun enfant trouvé"
-                emptySubtitle="Vous n'avez encore ajouté aucun enfant ou aucun enfant ne correspond à votre recherche."
-                emptyIcon={<EmptyIcon />}
+                ListEmptyComponent={<CustomEmptyComponent />}
                 error={error}
                 onRetry={retry}
                 ListHeaderComponent={ListHeaderComponent}
@@ -322,5 +342,42 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 14,
         color: colors.text.secondary,
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        width: '100%',
+    },
+    emptyTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: colors.text.primary,
+        marginTop: 20,
+        marginBottom: 10,
+    },
+    emptySubtitle: {
+        fontSize: 14,
+        color: colors.text.secondary,
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    pendingLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.background.paper,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: colors.primary.main,
+        marginTop: 10,
+        width: '90%',
+    },
+    pendingLinkText: {
+        fontSize: 14,
+        color: colors.primary.main,
+        fontWeight: '600',
+        marginHorizontal: 8,
     },
 });

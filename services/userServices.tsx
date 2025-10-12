@@ -233,6 +233,43 @@ export interface GetRecentPaymentTransactionsResponse {
   message: string;
 }
 
+// Pending/Rejected Children Interfaces
+export interface PendingRejectedChildDto {
+  childId: number;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  fatherName: string;
+  fK_ParentId: number;
+  fK_SchoolId: number;
+  fK_StatusId: number;
+  rejectionReason?: string;
+  approvedDate?: string;
+  approvedByUserId?: string;
+  createdOn: string;
+  modifiedOn?: string;
+  school?: {
+    schoolId: number;
+    schoolName: string;
+  };
+}
+
+export interface GetParentPendingRejectedChildrensParams {
+  parentId: number;
+  pageNumber?: number;
+  pageSize?: number;
+}
+
+export interface GetParentPendingRejectedChildrensResponse {
+  data: PendingRejectedChildDto[] | null;
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  status: string;
+  error: any | null;
+  message: string | null;
+}
+
 //#endregion
 
 
@@ -1065,4 +1102,54 @@ export const useUpdateParent = () => {
   );
 
   return updateParent;
+};
+
+export const useGetParentPendingRejectedChildrens = () => {
+  const api = useApiInstance({
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Language": "en"
+    },
+  });
+
+  const getPendingRejectedChildrens = useCallback(
+    async ({
+      parentId,
+      pageNumber = 1,
+      pageSize = 10
+    }: GetParentPendingRejectedChildrensParams): Promise<ApiResponse<GetParentPendingRejectedChildrensResponse>> => {
+      try {
+        const params = new URLSearchParams({
+          ParentId: parentId.toString(),
+          PageNumber: pageNumber.toString(),
+          PageSize: pageSize.toString(),
+        });
+
+        const response = await api.get<GetParentPendingRejectedChildrensResponse>(
+          `/api/Parents/GetParentPendingRejectedChildrens?${params.toString()}`
+        );
+
+        return {
+          success: true,
+          status: response.status,
+          data: response.data,
+          error: null,
+        };
+      } catch (error: any) {
+        console.error('Error fetching pending/rejected childrens:', error);
+        const status = error.response ? error.response.status : 0;
+        const errorData = error.response ? error.response.data : null;
+
+        return {
+          success: false,
+          status: status,
+          data: null,
+          error: errorData || "An error occurred while fetching pending/rejected childrens",
+        };
+      }
+    },
+    [api]
+  );
+
+  return getPendingRejectedChildrens;
 };

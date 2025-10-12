@@ -56,6 +56,7 @@ export interface InfiniteListProps<T extends ListItem> {
     emptyTitle?: string;
     emptySubtitle?: string;
     emptyIcon?: React.ReactNode;
+    ListEmptyComponent?: React.ComponentType<any> | React.ReactElement | null;
 
     // Error state props
     error?: string | null;
@@ -141,6 +142,7 @@ const MemoizedEmptyComponent = React.memo<{
     emptySubtitle: string;
     emptyIcon?: React.ReactNode;
     onRetry?: () => void;
+    customEmptyComponent?: React.ComponentType<any> | React.ReactElement | null;
 }>(({
     isLoading,
     error,
@@ -148,7 +150,8 @@ const MemoizedEmptyComponent = React.memo<{
     emptyTitle,
     emptySubtitle,
     emptyIcon,
-    onRetry
+    onRetry,
+    customEmptyComponent
 }) => {
     // Don't show empty component if we're loading initially
     if (isLoading && dataLength === 0) {
@@ -174,6 +177,13 @@ const MemoizedEmptyComponent = React.memo<{
 
     // Only show empty state if we're not loading and have no data
     if (!isLoading && dataLength === 0) {
+        // Use custom empty component if provided
+        if (customEmptyComponent) {
+            return React.isValidElement(customEmptyComponent) 
+                ? customEmptyComponent 
+                : React.createElement(customEmptyComponent);
+        }
+
         return (
             <View style={styles.centerContainer}>
                 {emptyIcon && (
@@ -222,6 +232,7 @@ export const InfiniteList = <T extends ListItem>({
     emptyTitle = 'No items found',
     emptySubtitle = 'Try adjusting your search or refresh the list',
     emptyIcon,
+    ListEmptyComponent,
     error,
     onRetry,
     contentContainerStyle,
@@ -288,8 +299,9 @@ export const InfiniteList = <T extends ListItem>({
             emptySubtitle={emptySubtitle}
             emptyIcon={emptyIcon}
             onRetry={onRetry}
+            customEmptyComponent={ListEmptyComponent}
         />
-    ), [isLoading, error, data.length, emptyTitle, emptySubtitle, emptyIcon, onRetry]);
+    ), [isLoading, error, data.length, emptyTitle, emptySubtitle, emptyIcon, onRetry, ListEmptyComponent]);
 
     // Memoized item separator as a function component
     const MemoizedItemSeparatorComponent = useCallback(() => (
