@@ -2,7 +2,7 @@
 import { BottomModal } from '@/components/BottomModal/BottomModal';
 import { CustomButton } from '@/components/Button/CustomPressable';
 import { colors, spacingX, spacingY } from '@/constants/theme';
-import { scaleFont } from '@/utils/stylings';
+import { scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
@@ -171,8 +171,8 @@ export const PaymentCycleModal: React.FC<PaymentCycleModalProps> = ({
             onClose={onClose}
             title="Sélectionner un cycle de paiement"
             subtitle="Choisissez le mode de paiement pour cet enfant"
-            // height="80%"
-            enableDragToExpand={false}
+            height={SCREEN_HEIGHT * 0.9}
+            enableDragToExpand={true}
         >
             <View style={styles.modalContent}>
                 {isLoading ? (

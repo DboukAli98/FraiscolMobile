@@ -2,7 +2,7 @@
 import { BottomModal } from '@/components/BottomModal/BottomModal';
 import { CustomButton } from '@/components/Button/CustomPressable';
 import { colors, spacingX, spacingY } from '@/constants/theme';
-import { scaleFont } from '@/utils/stylings';
+import { scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -133,7 +133,8 @@ export const SectionSelectionModal: React.FC<SectionSelectionModalProps> = ({
             onClose={onClose}
             title="Sélectionner une section"
             subtitle="Choisissez la classe pour cet enfant"
-            enableDragToExpand={false}
+            enableDragToExpand={true}
+            height={SCREEN_HEIGHT * 0.9}
         >
             <View style={styles.modalContent}>
                 {isLoading ? (
