@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.primary.main,
         marginTop: 10,
-        width: '90%',
+        width: '100%',
     },
     pendingLinkText: {
         fontSize: 14,

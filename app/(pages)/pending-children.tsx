@@ -131,9 +131,12 @@ const PendingChildrenScreen = () => {
                     {isRejected && child.rejectionReason && (
                         <View style={styles.rejectionBox}>
                             <Ionicons name="information-circle" size={14} color={colors.error.main} />
-                            <Text style={styles.rejectionText} numberOfLines={2}>
-                                {child.rejectionReason}
-                            </Text>
+                            <View style={styles.rejectionContent}>
+                                <Text style={styles.rejectionLabel}>Raison du rejet:</Text>
+                                <Text style={styles.rejectionText} numberOfLines={2}>
+                                    {child.rejectionReason}
+                                </Text>
+                            </View>
                         </View>
                     )}
                     <View style={styles.infoRow}>
@@ -399,11 +402,19 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         marginTop: spacingY._5,
     },
-    rejectionText: {
+    rejectionContent: {
         flex: 1,
+        marginLeft: spacingX._10,
+    },
+    rejectionLabel: {
+        fontSize: scaleFont(12),
+        fontWeight: '600',
+        color: colors.error.main,
+        marginBottom: spacingY._3,
+    },
+    rejectionText: {
         fontSize: scaleFont(12),
         color: colors.error.main,
-        marginLeft: spacingX._10,
         fontStyle: 'italic',
     },
 });
