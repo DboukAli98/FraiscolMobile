@@ -6,7 +6,7 @@ import { SelectField } from '@/components/SelectField/SelectField';
 import { colors, spacingX, spacingY } from '@/constants/theme';
 import useUserInfo from '@/hooks/useUserInfo';
 import { School } from '@/services/childrenServices';
-import { scaleFont } from '@/utils/stylings';
+import { scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
@@ -203,8 +203,9 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
             onClose={onClose}
             title="Ajouter un enfant"
             subtitle="Remplissez les informations de l'enfant"
-            enableDragToExpand={false}
+            enableDragToExpand={true}
             enableSwipeDown={false} // Disable swipe down to prevent interference
+            height={SCREEN_HEIGHT * 0.95}
 
         >
             <KeyboardAvoidingView
