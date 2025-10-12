@@ -220,7 +220,7 @@ const ChildrensScreen = () => {
             if (success) {
                 Alert.alert(
                     'Succès',
-                    'L\'enfant a été ajouté avec succès au système.',
+                    data?.message!,
                     [
                         {
                             text: 'OK',

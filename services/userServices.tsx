@@ -923,6 +923,84 @@ export const useGetParentDetails = () => {
   return getParentDetails;
 };
 
+// -----------------------------
+// Register new user (parent) - module level
+// -----------------------------
+export const useRegisterUser = () => {
+  const api = useApiInstance({
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept-Language': 'en',
+    },
+  });
+
+  const registerUser = useCallback(
+    async ({
+      firstName,
+      lastName,
+      password,
+      civilId = '',
+      countryCode = '242',
+      phoneNumber,
+      email = '',
+    }: {
+      firstName: string;
+      lastName: string;
+      password: string;
+      civilId?: string;
+      countryCode?: string; // expected without plus, e.g. '242'
+      phoneNumber: string;
+      email?: string;
+    }): Promise<ApiResponse<any>> => {
+      const payload = {
+        firstName,
+        lastName,
+        role: 'Parent',
+        password,
+        schoolId: 0,
+        civilId: civilId || '',
+        countryCode: countryCode || '242',
+        phoneNumber,
+        email: email || '',
+      };
+
+      try {
+        const response = await api.post('/api/Authentication/Register', payload);
+        const data = response.data;
+
+        if (data?.status === 'Success') {
+          return {
+            success: true,
+            status: response.status,
+            data: data,
+            error: null,
+          };
+        }
+
+        return {
+          success: false,
+          status: response.status,
+          data: data,
+          error: data || 'Registration failed',
+        };
+      } catch (error: any) {
+        const status = error.response ? error.response.status : 0;
+        const errorData = error.response ? error.response.data : null;
+        console.error('Register user error:', error);
+
+        return {
+          success: false,
+          status: status,
+          data: null,
+          error: errorData || 'An error occurred during registration',
+        };
+      }
+    },
+    [api]
+  );
+
+  return registerUser;
+};
 
 export const useUpdateParent = () => {
   const api = useApiInstance({
@@ -931,7 +1009,6 @@ export const useUpdateParent = () => {
       "Accept-Language": "en"
     },
   });
-
   const updateParent = useCallback(
     async ({
       parentId,

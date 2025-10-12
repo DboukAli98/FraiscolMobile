@@ -5,7 +5,7 @@ import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { setCredentials } from '@/redux/slices/authSlice';
 import type { AppDispatch } from '@/redux/store';
 import { useLogin } from '@/services/userServices';
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -145,9 +145,9 @@ export default function LoginScreen() {
               <View style={styles.footer}>
                 <Text style={styles.footerText}>
                   {"Vous n'avez pas de compte ?"}{' '}
-                  {/* <Link href="/(auth)/register" style={styles.link}>
-                  Sign up
-                </Link> */}
+                  <Link href="/(auth)/register" style={styles.link}>
+                    {"S'inscrire"}
+                  </Link>
                 </Text>
               </View>
             </View>
