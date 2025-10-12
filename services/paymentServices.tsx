@@ -19,14 +19,17 @@ export const useInitiateAirtelCollection = () => {
             subscriberMsisdn,
             amount,
             callbackUrl,
-            InstallmentId
+            InstallmentId,
+            PaymentType
+
         }: InitiateAirtelCollectionParams): Promise<ApiResponse<InitiateAirtelCollectionResponse>> => {
             const requestData = {
                 reference,
                 subscriberMsisdn,
                 amount,
                 callbackUrl,
-                InstallmentId
+                InstallmentId,
+                PaymentType
             };
 
             try {

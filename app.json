@@ -4,7 +4,7 @@
     "slug": "FraiscolMobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+  "icon": "./assets/images/icon-legacy.png",
     "scheme": "fraiscolmobile",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -26,8 +26,8 @@
     "android": {
       "package": "com.fraiscolmobile.fraiscol",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/adaptive-icon-foreground.png",
+        "backgroundImage": "./assets/images/adaptive-icon-background.png"
       },
       "edgeToEdgeEnabled": true
     },

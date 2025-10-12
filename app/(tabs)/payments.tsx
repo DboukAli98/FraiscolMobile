@@ -200,6 +200,7 @@ const PaymentsScreen: React.FC = () => {
         subscriberMsisdn: userInfo.phoneNumber,
         amount: totalAmount,
         callbackUrl,
+        PaymentType: "SCHOOLFEE"
       });
 
       if (response.success && response.data) {

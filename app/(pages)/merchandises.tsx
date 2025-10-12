@@ -9,12 +9,14 @@ import { colors, spacingX, spacingY } from '@/constants/theme';
 import { useMerchandiseData } from '@/hooks/useMerchandiseData';
 import useUserInfo from '@/hooks/useUserInfo';
 import { SchoolMerchandise } from '@/services/merchandisesServices';
+import { useInitiateAirtelCollection } from '@/services/paymentServices';
 import { scale, scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import { ListRenderItem } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   StyleSheet,
   Text,
@@ -75,6 +77,8 @@ const MerchandisesScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [cartItems, setCartItems] = useState<SchoolMerchandise[]>([]);
+  const [cartModalVisible, setCartModalVisible] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   //#endregion
 
@@ -115,16 +119,24 @@ const MerchandisesScreen = () => {
   }), [cartItems]);
 
   // Memoized render item to prevent unnecessary re-renders
-  const renderMerchandiseItem: ListRenderItem<MerchandiseListItem> = useCallback(({ item }) => (
-    <MerchandiseItem
-      merchandise={item}
-      onPress={handleMerchandisePress}
-      onAddToCart={handleAddToCart}
-      showActions={true}
-    />
-  ), []); // Empty deps since handlers are memoized below
+  // (moved lower, after handlers are declared)
 
   // Memoized handlers
+  const handleAddToCart = useCallback((merchandise: SchoolMerchandise) => {
+    // Check if item already in cart
+    const existingItem = cartItems.find(item => item.schoolMerchandiseId === merchandise.schoolMerchandiseId);
+
+    if (existingItem) {
+      Alert.alert('Déjà dans le panier', 'Cet article est déjà dans votre panier.');
+      return;
+    }
+
+    setCartItems(prev => [...prev, merchandise]);
+    // show small confirmation (keeps previous UX) but no cart Alert
+    // You can replace this with a snackbar if available
+    Alert.alert('Ajouté au panier', `${merchandise.schoolMerchandiseName} a été ajouté à votre panier.`, [{ text: 'OK' }]);
+  }, [cartItems]);
+
   const handleMerchandisePress = useCallback((merchandise: SchoolMerchandise) => {
     // Navigate to merchandise details or show details modal
     Alert.alert(
@@ -138,24 +150,7 @@ const MerchandisesScreen = () => {
         }
       ]
     );
-  }, []);
-
-  const handleAddToCart = useCallback((merchandise: SchoolMerchandise) => {
-    // Check if item already in cart
-    const existingItem = cartItems.find(item => item.schoolMerchandiseId === merchandise.schoolMerchandiseId);
-
-    if (existingItem) {
-      Alert.alert('Déjà dans le panier', 'Cet article est déjà dans votre panier.');
-      return;
-    }
-
-    setCartItems(prev => [...prev, merchandise]);
-    Alert.alert(
-      'Ajouté au panier',
-      `${merchandise.schoolMerchandiseName} a été ajouté à votre panier.`,
-      [{ text: 'OK' }]
-    );
-  }, [cartItems]);
+  }, [handleAddToCart]);
 
   const handleOpenFilter = useCallback(() => {
     setShowFilterModal(true);
@@ -177,31 +172,90 @@ const MerchandisesScreen = () => {
     setShowFilterModal(false);
   }, [applyFilters, schoolId]);
 
-  const handleViewCart = useCallback(() => {
+  const handleOpenCart = useCallback(() => {
     if (cartStats.count === 0) {
       Alert.alert('Panier vide', 'Votre panier est vide.');
       return;
     }
 
-    Alert.alert(
-      `Panier (${cartStats.count} articles)`,
-      `${cartStats.itemsList}\n\nTotal: ${cartStats.total.toLocaleString()} CFA`,
-      [
-        { text: 'Continuer', style: 'cancel' },
-        { text: 'Commander', onPress: () => handleCheckout() }
-      ]
-    );
-  }, [cartStats]);
+    setCartModalVisible(true);
+  }, [cartStats.count]);
 
-  const handleCheckout = useCallback(() => {
-    // Implement checkout logic here
-    Alert.alert('Commande', 'Fonctionnalité de commande à implémenter.');
+  const handleCloseCart = useCallback(() => {
+    setCartModalVisible(false);
   }, []);
+
+  // removed unused handleCheckout; checkout is via the cart modal's Pay button
+
+  // remove item from cart
+  const handleRemoveFromCart = useCallback((merchandiseId: number | string) => {
+    setCartItems(prev => prev.filter(i => i.schoolMerchandiseId !== merchandiseId));
+  }, []);
+
+  // Payment hook
+  const initiateAirtelCollection = useInitiateAirtelCollection();
+
+  const handlePay = useCallback(async () => {
+    if (isPaying) return;
+    console.log("User Info ", userInfo)
+    const subscriberMsisdn = (userInfo as any)?.phoneNumber;
+    if (!subscriberMsisdn) {
+      Alert.alert('Téléphone manquant', 'Votre numéro de téléphone est nécessaire pour procéder au paiement.');
+      return;
+    }
+
+    const amount = cartStats.total;
+    if (amount <= 0) {
+      Alert.alert('Montant invalide', 'Le montant du panier est invalide.');
+      return;
+    }
+
+    setIsPaying(true);
+    try {
+      const reference = `merch_${Date.now()}`;
+      const callbackUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}api/Payments/callback`;
+
+      const resp = await initiateAirtelCollection({
+        reference,
+        subscriberMsisdn,
+        amount,
+        callbackUrl,
+        InstallmentId: undefined,
+        PaymentType: "MERCHANDISEFEE"
+      } as any);
+
+      console.log("Payment response ", resp);
+
+      if (resp && resp.success) {
+        setCartItems([]);
+        setCartModalVisible(false);
+        Alert.alert('Paiement initié', 'La collecte a été initiée. Vous recevrez une confirmation.');
+      } else {
+        const msg = resp?.error || 'Échec de l\'initiation du paiement.';
+        Alert.alert('Erreur de paiement', String(msg));
+      }
+    } catch (err) {
+      console.error('Payment error', err);
+      Alert.alert('Erreur', 'Une erreur est survenue lors du paiement.');
+    } finally {
+      setIsPaying(false);
+    }
+  }, [cartStats.total, initiateAirtelCollection, isPaying, userInfo]);
 
   // Memoized key extractor
   const keyExtractor = useCallback((item: MerchandiseListItem) =>
     item.schoolMerchandiseId.toString(),
     []);
+
+  // Memoized render item to prevent unnecessary re-renders
+  const renderMerchandiseItem: ListRenderItem<MerchandiseListItem> = useCallback(({ item }) => (
+    <MerchandiseItem
+      merchandise={item}
+      onPress={handleMerchandisePress}
+      onAddToCart={handleAddToCart}
+      showActions={true}
+    />
+  ), [handleMerchandisePress, handleAddToCart]);
 
   // Memoized search handler with loading state
   const handleSearch = useCallback((query: string) => {
@@ -247,10 +301,10 @@ const MerchandisesScreen = () => {
     },
     {
       icon: 'cart-outline' as keyof typeof Ionicons.glyphMap,
-      onPress: handleViewCart,
+      onPress: handleOpenCart,
       color: cartStats.count > 0 ? colors.success.main : colors.text.secondary,
     }
-  ], [handleOpenFilter, handleViewCart, cartStats.count]);
+  ], [handleOpenFilter, handleOpenCart, cartStats.count]);
 
   // Memoized filter modal content
   const FilterModalContent = useMemo(() => (
@@ -369,6 +423,49 @@ const MerchandisesScreen = () => {
       >
         {FilterModalContent}
       </BottomModal>
+
+      {/* Cart Modal */}
+      <BottomModal
+        visible={cartModalVisible}
+        onClose={handleCloseCart}
+        title={`Panier (${cartStats.count})`}
+        subtitle={`Total: ${cartStats.total.toLocaleString()} CFA`}
+        height="auto"
+      >
+        <View style={styles.cartModalContainer}>
+          {cartItems.length === 0 ? (
+            <View style={{ paddingVertical: spacingY._20 }}>
+              <Text style={styles.errorSubtext}>Votre panier est vide.</Text>
+            </View>
+          ) : (
+            <View>
+              {cartItems.map(item => (
+                <View key={item.schoolMerchandiseId.toString()} style={styles.cartItemRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cartItemTitle}>{item.schoolMerchandiseName}</Text>
+                    <Text style={styles.cartItemPrice}>{item.schoolMerchandisePrice.toLocaleString()} CFA</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => handleRemoveFromCart(item.schoolMerchandiseId)} style={styles.cartItemRemove}>
+                    <Ionicons name="trash" size={scale(18)} color={colors.error.main} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              <View style={styles.cartFooter}>
+                <Text style={styles.cartTotalText}>Total</Text>
+                <Text style={styles.cartTotalText}>{cartStats.total.toLocaleString()} CFA</Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: spacingX._10, marginTop: spacingY._15 }}>
+                <SecondaryButton title="Continuer" onPress={handleCloseCart} style={{ flex: 1 }} />
+                <PrimaryButton title={isPaying ? '' : 'Payer'} onPress={handlePay} style={{ flex: 1 }} disabled={isPaying}>
+                  {isPaying && <ActivityIndicator color="#fff" />}
+                </PrimaryButton>
+              </View>
+            </View>
+          )}
+        </View>
+      </BottomModal>
     </ScreenView>
   );
 };
@@ -472,5 +569,43 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     flex: 1,
+  },
+  // Cart modal styles
+  cartModalContainer: {
+    paddingVertical: spacingY._10,
+  },
+  cartItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacingY._12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border?.light || '#e6e9ed',
+  },
+  cartItemTitle: {
+    fontSize: scaleFont(16),
+    color: colors.text.primary,
+    fontWeight: '600',
+  },
+  cartItemPrice: {
+    fontSize: scaleFont(14),
+    color: colors.text.secondary,
+    marginTop: spacingY._5,
+  },
+  cartItemRemove: {
+    marginLeft: spacingX._10,
+    padding: spacingX._10,
+  },
+  cartFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: spacingY._12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border?.light || '#e6e9ed',
+  },
+  cartTotalText: {
+    fontSize: scaleFont(16),
+    fontWeight: '700',
+    color: colors.text.primary,
   },
 });

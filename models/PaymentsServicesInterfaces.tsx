@@ -5,6 +5,7 @@ export interface InitiateAirtelCollectionParams {
     amount: number;
     callbackUrl: string;
     InstallmentId: number;
+    PaymentType: string;
 }
 
 // Airtel Collection Response
