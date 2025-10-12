@@ -18,6 +18,9 @@ export interface MerchandiseItemProps {
     merchandise: SchoolMerchandise;
     onPress?: (merchandise: SchoolMerchandise) => void;
     onAddToCart?: (merchandise: SchoolMerchandise) => void;
+    quantity?: number;
+    onIncrement?: (merchandiseId: number) => void;
+    onDecrement?: (merchandiseId: number) => void;
     showActions?: boolean;
     style?: ViewStyle;
 }
@@ -26,6 +29,9 @@ export const MerchandiseItem: React.FC<MerchandiseItemProps> = ({
     merchandise,
     onPress,
     onAddToCart,
+    quantity,
+    onIncrement,
+    onDecrement,
     showActions = true,
     style,
 }) => {
@@ -138,18 +144,32 @@ export const MerchandiseItem: React.FC<MerchandiseItemProps> = ({
 
                     {/* Action Button */}
                     {showActions && onAddToCart && (
-                        <TouchableOpacity
-                            style={styles.addToCartButton}
-                            onPress={handleAddToCart}
-                            activeOpacity={0.7}
-                        >
-                            <Ionicons
-                                name="cart-outline"
-                                size={scale(16)}
-                                color={colors.text.white}
-                            />
-                            <Text style={styles.addToCartText}>Ajouter au panier</Text>
-                        </TouchableOpacity>
+                        (typeof quantity === 'number' && quantity > 0) ? (
+                            <View style={styles.qtyControlRow}>
+                                <TouchableOpacity onPress={() => onDecrement?.(merchandise.schoolMerchandiseId)} style={styles.qtyControl}>
+                                    <Ionicons name="remove" size={scale(18)} color={colors.text.primary} />
+                                </TouchableOpacity>
+
+                                <Text style={styles.qtyCount}>{quantity}</Text>
+
+                                <TouchableOpacity onPress={() => onIncrement?.(merchandise.schoolMerchandiseId)} style={styles.qtyControl}>
+                                    <Ionicons name="add" size={scale(18)} color={colors.primary.main} />
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <TouchableOpacity
+                                style={styles.addToCartButton}
+                                onPress={handleAddToCart}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons
+                                    name="cart-outline"
+                                    size={scale(16)}
+                                    color={colors.text.white}
+                                />
+                                <Text style={styles.addToCartText}>Ajouter au panier</Text>
+                            </TouchableOpacity>
+                        )
                     )}
                 </View>
             </View>
@@ -311,6 +331,28 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: colors.text.white,
         marginLeft: spacingX._7,
+    },
+
+    // Quantity controls
+    qtyControlRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacingX._10,
+    },
+    qtyControl: {
+        width: scale(34),
+        height: scale(34),
+        borderRadius: radius._10,
+        backgroundColor: colors.background.paper,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    qtyCount: {
+        fontSize: scaleFont(14),
+        fontWeight: '600',
+        color: colors.text.primary,
+        minWidth: scale(24),
+        textAlign: 'center',
     },
 
     // Compact item styles

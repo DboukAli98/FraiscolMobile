@@ -26,6 +26,7 @@ import {
 
 interface MerchandiseListItem extends SchoolMerchandise {
   id: string | number;
+  quantity?: number;
 }
 
 // Memoized category option component
@@ -76,7 +77,11 @@ const MerchandisesScreen = () => {
   //#region States
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [cartItems, setCartItems] = useState<SchoolMerchandise[]>([]);
+  interface CartItem extends SchoolMerchandise {
+    quantity: number;
+  }
+
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartModalVisible, setCartModalVisible] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -103,19 +108,23 @@ const MerchandisesScreen = () => {
     categoryId: selectedCategory,
   });
 
-  // Memoize the list data transformation
-  const listData: MerchandiseListItem[] = useMemo(() =>
-    merchandises.map(merchandise => ({
+  // Memoize the list data transformation and include quantity from cartItems
+  const listData: MerchandiseListItem[] = useMemo(() => {
+    const qtyMap = new Map<number, number>();
+    cartItems.forEach(ci => qtyMap.set(ci.schoolMerchandiseId, ci.quantity));
+
+    return merchandises.map(merchandise => ({
       ...merchandise,
       id: merchandise.schoolMerchandiseId,
-    })), [merchandises]
-  );
+      quantity: qtyMap.get(merchandise.schoolMerchandiseId) ?? 0,
+    }));
+  }, [merchandises, cartItems]);
 
   // Memoized cart calculations
   const cartStats = useMemo(() => ({
-    count: cartItems.length,
-    total: cartItems.reduce((sum, item) => sum + item.schoolMerchandisePrice, 0),
-    itemsList: cartItems.map(item => `• ${item.schoolMerchandiseName}`).join('\n')
+    count: cartItems.reduce((s, i) => s + i.quantity, 0),
+    total: cartItems.reduce((sum, item) => sum + item.schoolMerchandisePrice * item.quantity, 0),
+    itemsList: cartItems.map(item => `• ${item.schoolMerchandiseName} x${item.quantity}`).join('\n')
   }), [cartItems]);
 
   // Memoized render item to prevent unnecessary re-renders
@@ -123,19 +132,29 @@ const MerchandisesScreen = () => {
 
   // Memoized handlers
   const handleAddToCart = useCallback((merchandise: SchoolMerchandise) => {
-    // Check if item already in cart
-    const existingItem = cartItems.find(item => item.schoolMerchandiseId === merchandise.schoolMerchandiseId);
+    setCartItems(prev => {
+      const existing = prev.find(i => i.schoolMerchandiseId === merchandise.schoolMerchandiseId);
+      if (existing) {
+        return prev.map(i => i.schoolMerchandiseId === merchandise.schoolMerchandiseId ? { ...i, quantity: i.quantity + 1 } : i);
+      }
+      return [...prev, { ...merchandise, quantity: 1 }];
+    });
+  }, []);
 
-    if (existingItem) {
-      Alert.alert('Déjà dans le panier', 'Cet article est déjà dans votre panier.');
-      return;
-    }
+  const handleIncrement = useCallback((merchandiseId: number) => {
+    setCartItems(prev => prev.map(i => i.schoolMerchandiseId === merchandiseId ? { ...i, quantity: i.quantity + 1 } : i));
+  }, []);
 
-    setCartItems(prev => [...prev, merchandise]);
-    // show small confirmation (keeps previous UX) but no cart Alert
-    // You can replace this with a snackbar if available
-    Alert.alert('Ajouté au panier', `${merchandise.schoolMerchandiseName} a été ajouté à votre panier.`, [{ text: 'OK' }]);
-  }, [cartItems]);
+  const handleDecrement = useCallback((merchandiseId: number) => {
+    setCartItems(prev => prev.flatMap(i => {
+      if (i.schoolMerchandiseId === merchandiseId) {
+        const next = i.quantity - 1;
+        if (next <= 0) return [] as CartItem[];
+        return [{ ...i, quantity: next }];
+      }
+      return [i];
+    }));
+  }, []);
 
   const handleMerchandisePress = useCallback((merchandise: SchoolMerchandise) => {
     // Navigate to merchandise details or show details modal
@@ -248,14 +267,20 @@ const MerchandisesScreen = () => {
     []);
 
   // Memoized render item to prevent unnecessary re-renders
-  const renderMerchandiseItem: ListRenderItem<MerchandiseListItem> = useCallback(({ item }) => (
-    <MerchandiseItem
-      merchandise={item}
-      onPress={handleMerchandisePress}
-      onAddToCart={handleAddToCart}
-      showActions={true}
-    />
-  ), [handleMerchandisePress, handleAddToCart]);
+  const renderMerchandiseItem: ListRenderItem<MerchandiseListItem> = useCallback(({ item }) => {
+    const cartItem = cartItems.find(c => String(c.schoolMerchandiseId) === String(item.schoolMerchandiseId));
+    return (
+      <MerchandiseItem
+        merchandise={item}
+        onPress={handleMerchandisePress}
+        onAddToCart={handleAddToCart}
+        showActions={true}
+        quantity={cartItem?.quantity}
+        onIncrement={() => handleIncrement(item.schoolMerchandiseId)}
+        onDecrement={() => handleDecrement(item.schoolMerchandiseId)}
+      />
+    );
+  }, [handleMerchandisePress, handleAddToCart, cartItems, handleIncrement, handleDecrement]);
 
   // Memoized search handler with loading state
   const handleSearch = useCallback((query: string) => {
@@ -442,12 +467,20 @@ const MerchandisesScreen = () => {
               {cartItems.map(item => (
                 <View key={item.schoolMerchandiseId.toString()} style={styles.cartItemRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.cartItemTitle}>{item.schoolMerchandiseName}</Text>
-                    <Text style={styles.cartItemPrice}>{item.schoolMerchandisePrice.toLocaleString()} CFA</Text>
+                    <Text style={styles.cartItemTitle}>{item.schoolMerchandiseName} x{item.quantity}</Text>
+                    <Text style={styles.cartItemPrice}>{(item.schoolMerchandisePrice * item.quantity).toLocaleString()} CFA</Text>
                   </View>
-                  <TouchableOpacity onPress={() => handleRemoveFromCart(item.schoolMerchandiseId)} style={styles.cartItemRemove}>
-                    <Ionicons name="trash" size={scale(18)} color={colors.error.main} />
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity onPress={() => handleDecrement(item.schoolMerchandiseId)} style={{ marginRight: spacingX._7 }}>
+                      <Ionicons name="remove-circle-outline" size={scale(20)} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleIncrement(item.schoolMerchandiseId)} style={{ marginRight: spacingX._7 }}>
+                      <Ionicons name="add-circle-outline" size={scale(20)} color={colors.primary.main} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleRemoveFromCart(item.schoolMerchandiseId)} style={styles.cartItemRemove}>
+                      <Ionicons name="trash" size={scale(18)} color={colors.error.main} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
 
