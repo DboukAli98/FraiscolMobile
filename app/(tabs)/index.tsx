@@ -15,6 +15,7 @@ import {
 } from '@/constants/theme';
 import { QuickActionData, QuickActionItem } from '@/GeneralData/GeneralData';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useNotificationsList } from '@/hooks/useNotificationsList';
 import { useRecentTransactions } from '@/hooks/useRecentTransactions';
 import useUserInfo from '@/hooks/useUserInfo';
 import { RecentPaymentTransactionDto, useGetParentCurrentMonthTotalFees, useLogout } from '@/services/userServices';
@@ -37,6 +38,11 @@ export default function HomeScreen() {
   const userInfo = useUserInfo();
 
   const { hasRequestedPermission, requestNotificationPermission } = useNotifications();
+  const { unreadCount } = useNotificationsList({
+    type: '',
+    pageSize: 10,
+    autoFetch: true,
+  });
 
   const logoutUser = useLogout();
   const getParentCurrentMonthTotalFees = useGetParentCurrentMonthTotalFees();
@@ -200,11 +206,21 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.headerRight}>
-              <GhostIconButton
-                iconName="notifications-outline"
-                size="md"
-                accessibilityLabel="Notifications"
-              />
+              <View style={styles.notificationIconContainer}>
+                <GhostIconButton
+                  iconName="notifications-outline"
+                  size="md"
+                  accessibilityLabel="Notifications"
+                  onPress={() => router.push('/(pages)/notifications')}
+                />
+                {unreadCount > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
               <GhostIconButton
                 iconName="log-out-outline"
                 onPress={handleLogout}
@@ -491,6 +507,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacingX._7,
+  },
+  notificationIconContainer: {
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.error.main,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: colors.background.default,
+  },
+  notificationBadgeText: {
+    color: colors.text.white,
+    fontSize: scaleFont(10),
+    fontWeight: '700',
   },
   greetingSection: {
     alignItems: 'flex-start'

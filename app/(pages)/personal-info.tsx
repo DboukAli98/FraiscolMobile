@@ -433,11 +433,11 @@ const PersonalInfoScreen = () => {
                                 iconColor={colors.secondary.main}
                             />
 
-                            {!isAgent && parentData && parentData.oneSignalPlayerId && (
+                            {currentData.oneSignalPlayerId && (
                                 <InfoItem
                                     icon="notifications-outline"
                                     label="ID Notifications"
-                                    value={parentData.oneSignalPlayerId}
+                                    value={currentData.oneSignalPlayerId}
                                     iconColor={colors.secondary.main}
                                 />
                             )}

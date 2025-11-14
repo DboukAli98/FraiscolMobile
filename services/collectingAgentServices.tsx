@@ -62,6 +62,7 @@ export interface CollectingAgentDetailsData {
     phoneNumber: string;
     assignedArea: string | null;
     commissionPercentage: number | null;
+    oneSignalPlayerId: string | null;
     fK_SchoolId: number;
     school: any | null;
     fK_StatusId: number;

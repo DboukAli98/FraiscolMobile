@@ -1,42 +1,65 @@
 // hooks/useNotifications.ts
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
-import { OneSignal } from 'react-native-onesignal';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
+import { OneSignal } from "react-native-onesignal";
 
-import useUserInfo from '@/hooks/useUserInfo';
-import { useRegisterUserDeviceToNotification } from '@/services/userServices';
+import useUserInfo from "@/hooks/useUserInfo";
+import { useRegisterUserDeviceToNotification } from "@/services/userServices";
 
-const NOTIFICATION_REQUESTED_KEY = 'notification_permission_requested';
-const DEVICE_REGISTERED_KEY = 'device_registered_for_notifications';
+const NOTIFICATION_REQUESTED_KEY_PREFIX = "notification_permission_requested";
+const DEVICE_REGISTERED_KEY_PREFIX = "device_registered_for_notifications";
+
+// Helper functions to create user-specific keys
+const getNotificationRequestedKey = (userId: string) =>
+  `${NOTIFICATION_REQUESTED_KEY_PREFIX}_${userId}`;
+const getDeviceRegisteredKey = (userId: string) =>
+  `${DEVICE_REGISTERED_KEY_PREFIX}_${userId}`;
 
 export const useNotifications = () => {
   const [hasRequestedPermission, setHasRequestedPermission] = useState(false);
   const [isDeviceRegistered, setIsDeviceRegistered] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [registrationError, setRegistrationError] = useState<string | null>(null);
-  
+  const [registrationError, setRegistrationError] = useState<string | null>(
+    null
+  );
+
   const userInfo = useUserInfo();
-  const registerUserDeviceToNotification = useRegisterUserDeviceToNotification();
+  const registerUserDeviceToNotification =
+    useRegisterUserDeviceToNotification();
 
   useEffect(() => {
     // Check if we've already requested permission and registered device
     const checkStatus = async () => {
+      if (!userInfo?.id) {
+        console.log("No user ID available, skipping notification status check");
+        return;
+      }
+
       try {
-        const hasRequested = await AsyncStorage.getItem(NOTIFICATION_REQUESTED_KEY);
-        const deviceRegistered = await AsyncStorage.getItem(DEVICE_REGISTERED_KEY);
-        
-        console.log('Notification permission requested status:', hasRequested);
-        console.log('Device registration status:', deviceRegistered);
-        
-        setHasRequestedPermission(hasRequested === 'true');
-        setIsDeviceRegistered(deviceRegistered === 'true');
+        const notificationKey = getNotificationRequestedKey(userInfo.id);
+        const deviceKey = getDeviceRegisteredKey(userInfo.id);
+
+        const hasRequested = await AsyncStorage.getItem(notificationKey);
+        const deviceRegistered = await AsyncStorage.getItem(deviceKey);
+
+        console.log(
+          `Notification permission requested status for user ${userInfo.id}:`,
+          hasRequested
+        );
+        console.log(
+          `Device registration status for user ${userInfo.id}:`,
+          deviceRegistered
+        );
+
+        setHasRequestedPermission(hasRequested === "true");
+        setIsDeviceRegistered(deviceRegistered === "true");
       } catch (error) {
-        console.error('Error checking notification status:', error);
+        console.error("Error checking notification status:", error);
       }
     };
 
     checkStatus();
-  }, []);
+  }, [userInfo?.id]);
 
   // Effect to handle device registration when conditions are met
   useEffect(() => {
@@ -47,48 +70,58 @@ export const useNotifications = () => {
       // 3. Device is not already registered
       // 4. Not currently registering
       if (
-        hasRequestedPermission && 
-        userInfo?.id && 
-        userInfo?.role && 
-        !isDeviceRegistered && 
+        hasRequestedPermission &&
+        userInfo?.id &&
+        userInfo?.role &&
+        !isDeviceRegistered &&
         !isRegistering
       ) {
         // Double-check that permission is actually granted
-        const permissionGranted = await OneSignal.Notifications.getPermissionAsync();
-        
+        const permissionGranted =
+          await OneSignal.Notifications.getPermissionAsync();
+
         if (permissionGranted) {
-          console.log('All conditions met, waiting for push token...');
-          
+          console.log("All conditions met, waiting for push token...");
+
           // Wait longer for OneSignal to generate push token
           let attempts = 0;
           const maxAttempts = 10;
-          
+
           while (attempts < maxAttempts) {
             try {
-              
-              const pushToken = await OneSignal.User.pushSubscription.getIdAsync();
+              const pushToken =
+                await OneSignal.User.pushSubscription.getIdAsync();
 
-              console.log('Current push token:', pushToken);
-              
+              console.log("Current push token:", pushToken);
+
               if (pushToken) {
-                console.log('Push token found, registering device...');
+                console.log(
+                  "Push token found, registering device...  with role " +
+                    userInfo.role
+                );
                 await registerDevice(userInfo.id, userInfo.role);
                 break;
               } else {
-                console.log(`Push token not ready yet, waiting... (${attempts + 1}/${maxAttempts})`);
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                console.log(
+                  `Push token not ready yet, waiting... (${
+                    attempts + 1
+                  }/${maxAttempts})`
+                );
+                await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds
                 attempts++;
               }
             } catch (error) {
-              console.error('Error checking push token:', error);
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              console.error("Error checking push token:", error);
+              await new Promise((resolve) => setTimeout(resolve, 2000));
               attempts++;
             }
           }
-          
+
           if (attempts >= maxAttempts) {
-            console.error('Failed to get push token after maximum attempts');
-            setRegistrationError('Failed to get push token - OneSignal may not be fully initialized');
+            console.error("Failed to get push token after maximum attempts");
+            setRegistrationError(
+              "Failed to get push token - OneSignal may not be fully initialized"
+            );
           }
         }
       }
@@ -99,40 +132,50 @@ export const useNotifications = () => {
     return () => clearTimeout(timer);
   }, [hasRequestedPermission, userInfo, isDeviceRegistered, isRegistering]);
 
-  const registerDevice = async (userId: string, role: string, retryCount = 0) => {
+  const registerDevice = async (
+    userId: string,
+    role: string,
+    retryCount = 0
+  ) => {
     try {
       setIsRegistering(true);
       setRegistrationError(null);
-      
-      console.log(`Attempting device registration (attempt ${retryCount + 1})...`);
-      
+
+      console.log(
+        `Attempting device registration (attempt ${retryCount + 1})...`
+      );
+
       // Get the OneSignal push token with retry logic
       let pushToken: string | null = null;
       let pushSubscriptionId: string | null = null;
-      
+
       try {
         pushSubscriptionId = await OneSignal.User.pushSubscription.getIdAsync();
         pushToken = await OneSignal.User.pushSubscription.getTokenAsync();
-        
-        console.log('Push Subscription ID:', pushSubscriptionId);
-        console.log('Push Token:', pushToken);
+
+        console.log("Push Subscription ID:", pushSubscriptionId);
+        console.log("Push Token:", pushToken);
       } catch (tokenError) {
-        console.error('Error getting push token:', tokenError);
+        console.error("Error getting push token:", tokenError);
       }
 
       // If no token and we haven't retried too many times, retry
       if (!pushSubscriptionId && retryCount < 3) {
-        console.log(`No push token available, retrying in 2 seconds... (${retryCount + 1}/3)`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log(
+          `No push token available, retrying in 2 seconds... (${
+            retryCount + 1
+          }/3)`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         return registerDevice(userId, role, retryCount + 1);
       }
 
       if (!pushSubscriptionId) {
-        throw new Error('Push token not available after retries');
+        throw new Error("Push token not available after retries");
       }
 
-      console.log('Registering device with token:', pushToken);
-      
+      console.log("Registering device with token:", pushToken);
+
       const response = await registerUserDeviceToNotification({
         UserId: userId,
         Role: role,
@@ -140,16 +183,18 @@ export const useNotifications = () => {
       });
 
       if (response.success) {
-        console.log('Device registered successfully:', response.data);
-        await AsyncStorage.setItem(DEVICE_REGISTERED_KEY, 'true');
+        console.log("Device registered successfully:", response.data);
+        const deviceKey = getDeviceRegisteredKey(userId);
+        await AsyncStorage.setItem(deviceKey, "true");
         setIsDeviceRegistered(true);
         return true;
       } else {
-        throw new Error(response.error || 'Registration failed');
+        throw new Error(response.error || "Registration failed");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error('Error registering device:', errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      console.error("Error registering device:", errorMessage);
       setRegistrationError(errorMessage);
       return false;
     } finally {
@@ -159,75 +204,102 @@ export const useNotifications = () => {
 
   const requestNotificationPermission = async () => {
     try {
-      console.log('Requesting notification permission...');
-      
+      if (!userInfo?.id) {
+        console.log(
+          "No user ID available, cannot request notification permission"
+        );
+        return false;
+      }
+
+      console.log("Requesting notification permission...");
+
       // Request permission first
       const granted = await OneSignal.Notifications.requestPermission(true);
-      
+
       if (granted) {
-        console.log('Notification permission granted');
-        
-        // Mark that we've requested permission
-        await AsyncStorage.setItem(NOTIFICATION_REQUESTED_KEY, 'true');
+        console.log("Notification permission granted");
+
+        // Mark that we've requested permission for this user
+        const notificationKey = getNotificationRequestedKey(userInfo.id);
+        await AsyncStorage.setItem(notificationKey, "true");
         setHasRequestedPermission(true);
-        
+
         // Setup notification handlers
         setupNotificationHandlers();
-        
+
         // DON'T register device immediately - let the useEffect handle it
         // after OneSignal has time to generate the push token
-        console.log('Permission granted, waiting for push token before registration...');
+        console.log(
+          "Permission granted, waiting for push token before registration..."
+        );
       } else {
-        console.log('Notification permission denied');
-        // Still mark as requested to avoid asking again
-        await AsyncStorage.setItem(NOTIFICATION_REQUESTED_KEY, 'true');
+        console.log("Notification permission denied");
+        // Still mark as requested to avoid asking again for this user
+        const notificationKey = getNotificationRequestedKey(userInfo.id);
+        await AsyncStorage.setItem(notificationKey, "true");
         setHasRequestedPermission(true);
       }
 
       return granted;
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      console.error("Error requesting notification permission:", error);
       return false;
     }
   };
 
   const setupNotificationHandlers = () => {
     // Handle notification received while app is in foreground
-    OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event) => {
-      console.log('Notification received in foreground');
-      event.getNotification().display();
-    });
+    OneSignal.Notifications.addEventListener(
+      "foregroundWillDisplay",
+      (event) => {
+        console.log("Notification received in foreground");
+        event.getNotification().display();
+      }
+    );
 
     // Handle notification clicks
-    OneSignal.Notifications.addEventListener('click', (event) => {
-      console.log('Notification clicked:', event);
+    OneSignal.Notifications.addEventListener("click", (event) => {
+      console.log("Notification clicked:", event);
       // Handle notification click actions here
       const notificationData = event.notification.additionalData;
-      console.log('Notification data:', notificationData);
+      console.log("Notification data:", notificationData);
     });
   };
 
   // Function to manually register device (if permission was granted but registration failed)
   const retryDeviceRegistration = async () => {
-    if (userInfo?.id && userInfo?.role && !isDeviceRegistered && !isRegistering) {
-      console.log('Manually retrying device registration...');
+    if (
+      userInfo?.id &&
+      userInfo?.role &&
+      !isDeviceRegistered &&
+      !isRegistering
+    ) {
+      console.log("Manually retrying device registration...");
       return await registerDevice(userInfo.id, userInfo.role);
     }
-    console.log('Cannot retry registration - conditions not met');
+    console.log("Cannot retry registration - conditions not met");
     return false;
   };
 
   // Function to reset registration status (useful for testing or re-registration)
   const resetRegistrationStatus = async () => {
     try {
-      await AsyncStorage.removeItem(DEVICE_REGISTERED_KEY);
-      await AsyncStorage.removeItem(NOTIFICATION_REQUESTED_KEY);
+      if (!userInfo?.id) {
+        console.log("No user ID available, cannot reset registration status");
+        return;
+      }
+
+      const notificationKey = getNotificationRequestedKey(userInfo.id);
+      const deviceKey = getDeviceRegisteredKey(userInfo.id);
+
+      await AsyncStorage.removeItem(deviceKey);
+      await AsyncStorage.removeItem(notificationKey);
       setIsDeviceRegistered(false);
       setHasRequestedPermission(false);
       setRegistrationError(null);
-      console.log('Registration status reset');
+      console.log(`Registration status reset for user ${userInfo.id}`);
     } catch (error) {
-      console.error('Error resetting registration status:', error);
+      console.error("Error resetting registration status:", error);
     }
   };
 
@@ -235,10 +307,10 @@ export const useNotifications = () => {
   const checkPermissionStatus = async () => {
     try {
       const permission = await OneSignal.Notifications.getPermissionAsync();
-      console.log('Current permission status:', permission);
+      console.log("Current permission status:", permission);
       return permission;
     } catch (error) {
-      console.error('Error checking permission status:', error);
+      console.error("Error checking permission status:", error);
       return false;
     }
   };

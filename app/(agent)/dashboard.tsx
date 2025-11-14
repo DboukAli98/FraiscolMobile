@@ -1,6 +1,8 @@
 import { GhostIconButton } from '@/components/IconButton/IconButton';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { colors, getTextStyle, spacingX, spacingY } from '@/constants/theme';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useNotificationsList } from '@/hooks/useNotificationsList';
 import useUserInfo from '@/hooks/useUserInfo';
 import { useGetCollectingAgentParents } from '@/services/collectingAgentServices';
 import { useLogout } from '@/services/userServices';
@@ -14,6 +16,12 @@ export default function AgentDashboard() {
     const user = useUserInfo();
     const logoutUser = useLogout();
     const getCollectingAgentParents = useGetCollectingAgentParents();
+    const { hasRequestedPermission, requestNotificationPermission } = useNotifications();
+    const { unreadCount } = useNotificationsList({
+        type: '',
+        pageSize: 10,
+        autoFetch: true,
+    });
 
     const [parentsCount, setParentsCount] = useState<number | null>(null);
     const [loadingCount, setLoadingCount] = useState<boolean>(false);
@@ -30,6 +38,17 @@ export default function AgentDashboard() {
             Alert.alert('Erreur', "Une erreur s'est produite lors de la déconnexion.");
         }
     };
+
+    // Request notification permission on first load
+    useEffect(() => {
+        if (!hasRequestedPermission) {
+            const timer = setTimeout(() => {
+                requestNotificationPermission();
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [hasRequestedPermission, requestNotificationPermission]);
 
     useEffect(() => {
         const fetchCount = async () => {
@@ -67,11 +86,21 @@ export default function AgentDashboard() {
                     </View>
                 </View>
                 <View style={styles.headerRight}>
-                    <GhostIconButton
-                        iconName="notifications-outline"
-                        size="md"
-                        accessibilityLabel="Notifications"
-                    />
+                    <View style={styles.notificationIconContainer}>
+                        <GhostIconButton
+                            iconName="notifications-outline"
+                            size="md"
+                            accessibilityLabel="Notifications"
+                            onPress={() => router.push('/(pages)/notifications')}
+                        />
+                        {unreadCount > 0 && (
+                            <View style={styles.notificationBadge}>
+                                <Text style={styles.notificationBadgeText}>
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                     <GhostIconButton
                         iconName="log-out-outline"
                         onPress={handleLogout}
@@ -119,6 +148,28 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacingX._7,
+    },
+    notificationIconContainer: {
+        position: 'relative',
+    },
+    notificationBadge: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        backgroundColor: colors.error.main,
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+        borderWidth: 2,
+        borderColor: colors.background.default,
+    },
+    notificationBadgeText: {
+        color: colors.text.white,
+        fontSize: scaleFont(10),
+        fontWeight: '700',
     },
     avatar: {
         width: scale(48),
