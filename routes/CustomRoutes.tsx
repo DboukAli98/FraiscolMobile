@@ -33,6 +33,12 @@ const CustomRoutes = ({
     ]}>
       {state.routes.map((route, idx) => {
         const { options } = descriptors[route.key];
+
+        // Skip routes with tabBarButton set to null (hidden routes)
+        if (options.tabBarButton === null || typeof options.tabBarButton === 'function') {
+          return null;
+        }
+
         const label = options.title ?? options.tabBarLabel ?? route.name;
         const isFocused = state.index === idx;
         const color = isFocused ? activeTintColor : inactiveTintColor;

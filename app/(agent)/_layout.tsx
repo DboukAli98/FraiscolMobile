@@ -79,6 +79,14 @@ export default function AgentTabsLayout() {
                     ),
                 }}
             />
+
+            <Tabs.Screen
+                name="parent-details"
+                options={{
+                    tabBarButton: () => null,
+                    tabBarStyle: { display: 'none' },
+                }}
+            />
         </Tabs>
     );
 }

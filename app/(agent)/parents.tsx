@@ -2,6 +2,8 @@ import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { colors, getTextStyle, spacingX, spacingY } from '@/constants/theme';
 import useUserInfo from '@/hooks/useUserInfo';
 import { useGetCollectingAgentParents } from '@/services/collectingAgentServices';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -84,12 +86,22 @@ export default function AgentParents() {
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary.main]} />
                     }
                     renderItem={({ item }) => (
-                        <TouchableOpacity style={styles.item}>
+                        <TouchableOpacity
+                            style={styles.item}
+                            onPress={() => router.push({
+                                pathname: '/(agent)/parent-details/[id]',
+                                params: { id: item.id.toString() }
+                            })}
+                            activeOpacity={0.7}
+                        >
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.name}>{item.name}</Text>
                                 <Text style={styles.phone}>{item.phone}</Text>
+                                {item.assignedOn && (
+                                    <Text style={styles.assigned}>Assigné: {item.assignedOn}</Text>
+                                )}
                             </View>
-                            <Text style={styles.assigned}>Assigné: {item.assignedOn}</Text>
+                            <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
                         </TouchableOpacity>
                     )}
                     ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -113,18 +125,21 @@ const styles = StyleSheet.create({
         ...getTextStyle('sm', 'bold', colors.primary.main),
     },
     item: {
-        backgroundColor: colors.background.default,
+        backgroundColor: colors.background.paper,
         padding: spacingX._12,
         borderRadius: 12,
         flexDirection: 'row',
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.border?.light || '#e1e5e9',
     },
     name: {
         ...getTextStyle('base', 'semibold', colors.text.primary),
+        marginBottom: spacingY._3,
     },
     phone: {
         ...getTextStyle('sm', 'normal', colors.text.secondary),
-        marginTop: spacingY._3,
+        marginBottom: spacingY._3,
     },
     assigned: {
         ...getTextStyle('xs', 'medium', colors.text.secondary),
