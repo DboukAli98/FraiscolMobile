@@ -37,6 +37,55 @@ export interface CollectingAgentParentDto {
     modifiedOn: string | null;
 }
 
+// Collecting Agent Details interfaces
+export interface CollectingAgentParentAssignment {
+    collectingAgentParentId: number;
+    fK_CollectingAgentId: number;
+    fK_ParentId: number;
+    parent: any | null;
+    assignedDate: string;
+    unassignedDate: string | null;
+    isActive: boolean;
+    assignmentNotes: string;
+    fK_AssignedByDirectorId: number;
+    assignedByDirector: any | null;
+    createdOn: string;
+    modifiedOn: string | null;
+}
+
+export interface CollectingAgentDetailsData {
+    collectingAgentId: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    countryCode: string;
+    phoneNumber: string;
+    assignedArea: string | null;
+    commissionPercentage: number | null;
+    fK_SchoolId: number;
+    school: any | null;
+    fK_StatusId: number;
+    status: any | null;
+    collectingAgentParents: CollectingAgentParentAssignment[];
+    processedTransactions: any[];
+    handledSupportRequests: any[];
+    commissionHistory: any[];
+    fK_UserId: string;
+    createdOn: string;
+    modifiedOn: string | null;
+}
+
+export interface GetCollectingAgentDetailsParams {
+    agentId: number;
+}
+
+export interface GetCollectingAgentDetailsResponse {
+    data: CollectingAgentDetailsData | null;
+    status: string;
+    error: any | null;
+    message: string | null;
+}
+
 // Paged response shape
 export interface GetCollectingAgentParentsResponse {
     data: CollectingAgentParentDto[] | null;
@@ -47,6 +96,57 @@ export interface GetCollectingAgentParentsResponse {
     error: any | null;
     message: string | null;
 }
+
+/**
+ * Hook: useGetCollectingAgentDetails
+ * Calls GET /api/CollectingAgent/GetCollectingAgentDetails
+ */
+export const useGetCollectingAgentDetails = () => {
+    const api = useApiInstance({
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept-Language': 'fr',
+        },
+    });
+
+    const getCollectingAgentDetails = useCallback(
+        async ({
+            agentId,
+        }: GetCollectingAgentDetailsParams): Promise<ApiResponse<GetCollectingAgentDetailsResponse>> => {
+            const params = new URLSearchParams({
+                AgentId: agentId.toString(),
+            }).toString();
+
+            try {
+                const response = await api.get<GetCollectingAgentDetailsResponse>(
+                    `/api/CollectingAgent/GetCollectingAgentDetails?${params}`
+                );
+
+                return {
+                    success: true,
+                    status: response.status,
+                    data: response.data,
+                    error: null,
+                };
+            } catch (error: any) {
+                const status = error.response ? error.response.status : 0;
+                const errorData = error.response ? error.response.data : null;
+
+                console.error('Get collecting agent details error:', error);
+
+                return {
+                    success: false,
+                    status,
+                    data: null,
+                    error: errorData || "Une erreur s'est produite lors de la récupération des détails de l'agent",
+                };
+            }
+        },
+        [api]
+    );
+
+    return getCollectingAgentDetails;
+};
 
 /**
  * Hook: useGetCollectingAgentParents

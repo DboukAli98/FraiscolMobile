@@ -5,7 +5,9 @@ import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { colors, spacingY } from '@/constants/theme';
 import useUserInfo from '@/hooks/useUserInfo';
+import useUserRole from '@/hooks/useUserRole';
 import { ParentDetailsData } from '@/models/ParentDetailsInterfaces';
+import { CollectingAgentDetailsData, useGetCollectingAgentDetails } from '@/services/collectingAgentServices';
 import { useGetParentDetails, useUpdateParent } from '@/services/userServices';
 import { scaleFont } from '@/utils/stylings';
 import { router } from 'expo-router';
@@ -43,11 +45,17 @@ interface FormErrors {
 
 const EditProfileScreen = () => {
     const userInfo = useUserInfo();
+    const userRole = useUserRole();
     const getParentDetails = useGetParentDetails();
+    const getAgentDetails = useGetCollectingAgentDetails();
     const updateParent = useUpdateParent();
+
+    // Check if user is an agent
+    const isAgent = userRole?.toLowerCase() === 'agent';
 
     // States
     const [parentDetails, setParentDetails] = useState<ParentDetailsData | null>(null);
+    const [agentDetails, setAgentDetails] = useState<CollectingAgentDetailsData | null>(null);
     const [formData, setFormData] = useState<FormData>({
         firstName: '',
         lastName: '',
@@ -182,9 +190,9 @@ const EditProfileScreen = () => {
         }
     };
 
-    // Fetch parent details - moved to useEffect to avoid infinite loops
+    // Fetch details based on role
     useEffect(() => {
-        const fetchParentDetails = async () => {
+        const fetchDetails = async () => {
             if (!userInfo?.parentId || hasInitializedRef.current) {
                 return;
             }
@@ -193,29 +201,57 @@ const EditProfileScreen = () => {
             setIsLoading(true);
 
             try {
-                const { success, data, error } = await getParentDetails({
-                    parentId: parseInt(userInfo.parentId)
-                });
+                if (isAgent) {
+                    // Fetch agent details
+                    const agentId = typeof userInfo.parentId === 'number'
+                        ? userInfo.parentId
+                        : Number(userInfo.parentId ?? 0);
 
-                if (!isMountedRef.current) return;
+                    const { success, data, error } = await getAgentDetails({ agentId });
 
-                if (success && data?.data) {
-                    const details = data.data;
-                    setParentDetails(details);
-                    setFormData({
-                        firstName: details.firstName || '',
-                        lastName: details.lastName || '',
-                        fatherName: details.fatherName || '',
-                        email: details.email || '',
-                        civilId: details.civilId || '',
-                        countryCode: details.countryCode || '+242',
-                        phoneNumber: details.phoneNumber || '',
-                    });
+                    if (!isMountedRef.current) return;
+
+                    if (success && data?.data) {
+                        const details = data.data;
+                        setAgentDetails(details);
+                        setFormData({
+                            firstName: details.firstName || '',
+                            lastName: details.lastName || '',
+                            fatherName: '', // Agents don't have fatherName
+                            email: details.email || '',
+                            civilId: '', // Agents don't have civilId
+                            countryCode: details.countryCode || '+242',
+                            phoneNumber: details.phoneNumber || '',
+                        });
+                    } else {
+                        throw new Error(error || 'Échec de la récupération des détails de l\'agent');
+                    }
                 } else {
-                    throw new Error(error || 'Échec de la récupération des détails du parent');
+                    // Fetch parent details
+                    const { success, data, error } = await getParentDetails({
+                        parentId: parseInt(userInfo.parentId)
+                    });
+
+                    if (!isMountedRef.current) return;
+
+                    if (success && data?.data) {
+                        const details = data.data;
+                        setParentDetails(details);
+                        setFormData({
+                            firstName: details.firstName || '',
+                            lastName: details.lastName || '',
+                            fatherName: details.fatherName || '',
+                            email: details.email || '',
+                            civilId: details.civilId || '',
+                            countryCode: details.countryCode || '+242',
+                            phoneNumber: details.phoneNumber || '',
+                        });
+                    } else {
+                        throw new Error(error || 'Échec de la récupération des détails du parent');
+                    }
                 }
             } catch (err: any) {
-                console.error('Error fetching parent details:', err);
+                console.error('Error fetching details:', err);
                 if (isMountedRef.current) {
                     Alert.alert('Erreur', 'Impossible de charger les informations du profil');
                 }
@@ -226,8 +262,9 @@ const EditProfileScreen = () => {
             }
         };
 
-        fetchParentDetails();
-    }, [userInfo?.parentId]); // Only depend on parentId
+        fetchDetails();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userInfo?.parentId, isAgent]); // Only depend on parentId and isAgent
 
     // Cleanup
     useEffect(() => {
@@ -302,15 +339,17 @@ const EditProfileScreen = () => {
                             autoCapitalize="words"
                         />
 
-                        <CustomInput
-                            label="Nom du père"
-                            placeholder="Entrez le nom de votre père"
-                            value={formData.fatherName}
-                            onChangeText={(value) => updateFormData('fatherName', value)}
-                            error={errors.fatherName}
-                            leftIcon="person-outline"
-                            autoCapitalize="words"
-                        />
+                        {!isAgent && (
+                            <CustomInput
+                                label="Nom du père"
+                                placeholder="Entrez le nom de votre père"
+                                value={formData.fatherName}
+                                onChangeText={(value) => updateFormData('fatherName', value)}
+                                error={errors.fatherName}
+                                leftIcon="person-outline"
+                                autoCapitalize="words"
+                            />
+                        )}
 
                         <Text style={styles.sectionTitle}>Contact</Text>
 
@@ -352,15 +391,17 @@ const EditProfileScreen = () => {
                             inputType="email"
                         />
 
-                        <CustomInput
-                            label="ID civil"
-                            placeholder="Entrez votre ID civil"
-                            value={formData.civilId}
-                            onChangeText={(value) => updateFormData('civilId', value)}
-                            error={errors.civilId}
-                            leftIcon="finger-print-outline"
-                            keyboardType="numeric"
-                        />
+                        {!isAgent && (
+                            <CustomInput
+                                label="ID civil"
+                                placeholder="Entrez votre ID civil"
+                                value={formData.civilId}
+                                onChangeText={(value) => updateFormData('civilId', value)}
+                                error={errors.civilId}
+                                leftIcon="finger-print-outline"
+                                keyboardType="numeric"
+                            />
+                        )}
                     </View>
 
                     {/* Action Section */}

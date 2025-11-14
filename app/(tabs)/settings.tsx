@@ -4,11 +4,13 @@ import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { colors, spacingX, spacingY } from '@/constants/theme';
 import { useParentProfile } from '@/hooks/useParentProfile';
 import useUserInfo from '@/hooks/useUserInfo';
+import useUserRole from '@/hooks/useUserRole';
+import { CollectingAgentDetailsData, useGetCollectingAgentDetails } from '@/services/collectingAgentServices';
 import { useLogout } from '@/services/userServices';
 import { scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Linking,
@@ -66,12 +68,50 @@ const SettingsScreen = () => {
   const userInfo = useUserInfo();
   const { parentData } = useParentProfile();
   const logoutUser = useLogout();
+  const userRole = useUserRole();
+  const getAgentDetails = useGetCollectingAgentDetails();
+
+  // Check if user is an agent
+  const isAgent = userRole?.toLowerCase() === 'agent';
+
+  // Agent data state
+  const [agentData, setAgentData] = useState<CollectingAgentDetailsData | null>(null);
 
   // Settings state
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [autoBackup, setAutoBackup] = useState(true);
+
+  // Use ref to track if data has been loaded to prevent infinite loops
+  const hasLoadedAgentDataRef = React.useRef(false);
+
+  // Fetch agent details if user is an agent
+  useEffect(() => {
+    const fetchAgentDetails = async () => {
+      if (isAgent && userInfo?.parentId && !hasLoadedAgentDataRef.current) {
+        hasLoadedAgentDataRef.current = true;
+
+        const agentId = typeof userInfo.parentId === 'number'
+          ? userInfo.parentId
+          : Number(userInfo.parentId ?? 0);
+
+        if (agentId) {
+          try {
+            const response = await getAgentDetails({ agentId });
+            if (response.success && response.data?.data) {
+              setAgentData(response.data.data);
+            }
+          } catch (error) {
+            console.error('Failed to fetch agent details:', error);
+          }
+        }
+      }
+    };
+
+    fetchAgentDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAgent, userInfo?.parentId]);
 
   // Handlers
   const handleEditProfile = () => {
@@ -132,9 +172,15 @@ const SettingsScreen = () => {
   };
 
   const getInitials = () => {
+    // For agents, use agentData
+    if (isAgent && agentData?.firstName && agentData?.lastName) {
+      return `${agentData.firstName.charAt(0)}${agentData.lastName.charAt(0)}`.toUpperCase();
+    }
+    // For parents, use parentData
     if (parentData?.firstName && parentData?.lastName) {
       return `${parentData.firstName.charAt(0)}${parentData.lastName.charAt(0)}`.toUpperCase();
     }
+    // Fallback to userInfo
     const name = userInfo?.name || 'User';
     const names = name.split(' ');
     if (names.length >= 2) {
@@ -144,13 +190,24 @@ const SettingsScreen = () => {
   };
 
   const getDisplayName = () => {
+    // For agents, use agentData
+    if (isAgent && agentData?.firstName && agentData?.lastName) {
+      return `${agentData.firstName} ${agentData.lastName}`;
+    }
+    // For parents, use parentData
     if (parentData?.firstName && parentData?.lastName) {
       return `${parentData.firstName} ${parentData.lastName}`;
     }
+    // Fallback to userInfo
     return userInfo?.name || 'Utilisateur';
   };
 
   const getDisplayEmail = () => {
+    // For agents, use agentData
+    if (isAgent && agentData?.email) {
+      return agentData.email;
+    }
+    // For parents, use parentData
     return parentData?.email || userInfo?.email || 'email@example.com';
   };
 
@@ -182,29 +239,34 @@ const SettingsScreen = () => {
           onPress={handlePersonalInfo}
         />
 
-        <SettingItem
-          icon="people-outline"
-          title="Gestion des enfants"
-          subtitle="Ajouter ou modifier les informations des enfants"
-          onPress={() => router.push('/(pages)/childrens')}
-        />
+        {/* Hide child-related settings for agents */}
+        {!isAgent && (
+          <>
+            <SettingItem
+              icon="people-outline"
+              title="Gestion des enfants"
+              subtitle="Ajouter ou modifier les informations des enfants"
+              onPress={() => router.push('/(pages)/childrens')}
+            />
 
-        <SettingItem
-          icon="card-outline"
-          title="Méthodes de paiement"
-          subtitle="Cartes bancaires, comptes mobiles"
-          onPress={() => router.push('/(pages)/payment-methods')}
-        />
+            <SettingItem
+              icon="card-outline"
+              title="Méthodes de paiement"
+              subtitle="Cartes bancaires, comptes mobiles"
+              onPress={() => router.push('/(pages)/payment-methods')}
+            />
 
-        <SettingItem
-          icon="document-text-outline"
-          title="Historique des paiements"
-          subtitle="Voir tous les paiements effectués"
-          onPress={() => router.push('/(pages)/paymenthistory')}
-        />
+            <SettingItem
+              icon="document-text-outline"
+              title="Historique des paiements"
+              subtitle="Voir tous les paiements effectués"
+              onPress={() => router.push('/(pages)/paymenthistory')}
+            />
 
-        {/* Pending/Rejected Children Summary */}
-        <PendingChildrenSummary />
+            {/* Pending/Rejected Children Summary */}
+            <PendingChildrenSummary />
+          </>
+        )}
 
         {/* App Settings */}
         <SectionHeader title="Préférences de l'application" />
