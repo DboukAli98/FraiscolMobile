@@ -7,7 +7,6 @@ import {
     FlatList,
     Modal,
     Pressable,
-    SafeAreaView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -103,37 +102,35 @@ export const SelectField: React.FC<SelectFieldProps> = ({
             <Modal
                 visible={isVisible}
                 transparent={true}
-                animationType="slide"
+                animationType="fade"
                 onRequestClose={() => setIsVisible(false)}
             >
                 <Pressable
                     style={styles.modalOverlay}
                     onPress={() => setIsVisible(false)}
                 >
-                    <SafeAreaView style={styles.modalSafeArea}>
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>
-                                    {label || "Sélectionner une option"}
-                                </Text>
-                                <TouchableOpacity
-                                    style={styles.closeButton}
-                                    onPress={() => setIsVisible(false)}
-                                >
-                                    <Ionicons name="close" size={24} color={colors.text.primary} />
-                                </TouchableOpacity>
-                            </View>
-
-                            <FlatList
-                                data={options}
-                                renderItem={renderOption}
-                                keyExtractor={(item) => item.value.toString()}
-                                style={styles.optionsList}
-                                showsVerticalScrollIndicator={false}
-                                ItemSeparatorComponent={() => <View style={styles.separator} />}
-                            />
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>
+                                {label || "Sélectionner une option"}
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={() => setIsVisible(false)}
+                            >
+                                <Ionicons name="close" size={24} color={colors.text.primary} />
+                            </TouchableOpacity>
                         </View>
-                    </SafeAreaView>
+
+                        <FlatList
+                            data={options}
+                            renderItem={renderOption}
+                            keyExtractor={(item) => item.value.toString()}
+                            style={styles.optionsList}
+                            showsVerticalScrollIndicator={false}
+                            ItemSeparatorComponent={() => <View style={styles.separator} />}
+                        />
+                    </View>
                 </Pressable>
             </Modal>
         </View>
@@ -186,45 +183,49 @@ const styles = StyleSheet.create({
     // Modal styles
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'flex-end',
-    },
-    modalSafeArea: {
-        flex: 1,
-        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: spacingX._20,
     },
     modalContainer: {
-        backgroundColor: colors.background.paper,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        width: '100%',
+        maxWidth: 400,
         maxHeight: '70%',
+        overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
     },
     modalHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: spacingX._20,
-        paddingVertical: spacingY._15,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border?.light || '#e1e5e9',
+        paddingTop: spacingY._20,
+        paddingBottom: spacingY._15,
+        backgroundColor: '#FFFFFF',
     },
     modalTitle: {
-        fontSize: scaleFont(16),
-        fontWeight: '600',
+        fontSize: scaleFont(18),
+        fontWeight: '700',
         color: colors.text.primary,
+        letterSpacing: 0.3,
     },
     closeButton: {
-        padding: spacingX._5,
-        borderRadius: 20,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         backgroundColor: colors.background.default,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     optionsList: {
-        paddingHorizontal: spacingX._20,
+        paddingHorizontal: spacingX._15,
         paddingVertical: spacingY._10,
     },
     optionItem: {
@@ -232,24 +233,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingVertical: spacingY._15,
-        paddingHorizontal: spacingX._10,
-        borderRadius: 8,
+        paddingHorizontal: spacingX._15,
+        borderRadius: 12,
+        marginVertical: spacingY._5,
     },
     selectedOption: {
-        backgroundColor: colors.primary.light + '20',
+        backgroundColor: 'transparent',
     },
     optionText: {
-        fontSize: scaleFont(14),
+        fontSize: scaleFont(15),
         color: colors.text.primary,
         flex: 1,
+        letterSpacing: 0.2,
     },
     selectedOptionText: {
         color: colors.primary.main,
         fontWeight: '600',
     },
     separator: {
-        height: 1,
-        backgroundColor: colors.border?.light || '#e1e5e9',
-        marginHorizontal: spacingX._10,
+        height: 0,
     },
 });

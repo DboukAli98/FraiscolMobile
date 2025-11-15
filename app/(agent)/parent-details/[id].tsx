@@ -1,4 +1,5 @@
 // app/(agent)/parent-details/[id].tsx
+import { LogActivityModal } from '@/components/ActionModals/LogActivityModal';
 import { BottomModal } from '@/components/BottomModal/BottomModal';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
@@ -44,6 +45,7 @@ export default function AgentParentDetails() {
     // Modal state
     const [selectedPayment, setSelectedPayment] = useState<ParentInstallmentDto | null>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isLogActivityModalVisible, setIsLogActivityModalVisible] = useState(false);
 
     // Use ref to track if data has been loaded to prevent infinite loops
     const hasLoadedRef = React.useRef(false);
@@ -571,6 +573,11 @@ export default function AgentParentDetails() {
                 onBack={() => router.back()}
                 actions={[
                     {
+                        icon: 'create-outline',
+                        onPress: () => setIsLogActivityModalVisible(true),
+                        color: colors.primary.main,
+                    },
+                    {
                         icon: 'call-outline',
                         onPress: handleCallParent,
                         color: colors.primary.main,
@@ -594,6 +601,12 @@ export default function AgentParentDetails() {
                 {renderPendingPayments()}
             </ScrollView>
             {renderPaymentDetailModal()}
+            <LogActivityModal
+                visible={isLogActivityModalVisible}
+                onClose={() => setIsLogActivityModalVisible(false)}
+                parentId={parentId}
+                parentName={parentData ? `${parentData.firstName} ${parentData.lastName}` : undefined}
+            />
         </ScreenView>
     );
 }
@@ -894,7 +907,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.error.light,
     },
     statusBadgeText: {
-        ...getTextStyle('xs', 'semibold', colors.text.primary),
+        ...getTextStyle('xs', 'semibold', colors.text.white),
     },
     overdueWarning: {
         flexDirection: 'row',
@@ -904,7 +917,7 @@ const styles = StyleSheet.create({
         marginTop: spacingY._10,
     },
     overdueWarningText: {
-        ...getTextStyle('sm', 'normal', colors.error.main),
+        ...getTextStyle('sm', 'normal', colors.text.white),
         marginLeft: spacingX._10,
         flex: 1,
     },

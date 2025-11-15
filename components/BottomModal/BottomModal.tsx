@@ -567,6 +567,7 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         paddingHorizontal: spacingX._20,
+        paddingTop: spacingY._15,
         paddingBottom: spacingY._10, // Reduced padding since we're adding paddingBottom to modal
     },
 
