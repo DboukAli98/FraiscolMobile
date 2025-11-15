@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     overdueTagText: {
-        ...getTextStyle('xs', 'medium', colors.error.main),
+        ...getTextStyle('xs', 'medium', colors.text.white),
     },
     loadMoreButton: {
         flexDirection: 'row',
