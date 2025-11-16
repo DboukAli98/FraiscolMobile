@@ -10,7 +10,7 @@ import { useMerchandiseData } from '@/hooks/useMerchandiseData';
 import useUserInfo from '@/hooks/useUserInfo';
 import { SchoolMerchandise } from '@/services/merchandisesServices';
 import { useInitiateAirtelCollection } from '@/services/paymentServices';
-import { scale, scaleFont } from '@/utils/stylings';
+import { scale, scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import { ListRenderItem } from '@shopify/flash-list';
 import { router } from 'expo-router';
@@ -83,8 +83,11 @@ const MerchandisesScreen = () => {
 
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartModalVisible, setCartModalVisible] = useState(false);
+  const [showPaymentConfirmModal, setShowPaymentConfirmModal] = useState(false);
+  const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [paymentReference, setPaymentReference] = useState<string>('');
   //#endregion
 
   const {
@@ -197,7 +200,7 @@ const MerchandisesScreen = () => {
       return;
     }
 
-    setCartModalVisible(true);
+    setShowPaymentConfirmModal(true);
   }, [cartStats.count]);
 
   const handleCloseCart = useCallback(() => {
@@ -216,7 +219,7 @@ const MerchandisesScreen = () => {
 
   const handlePay = useCallback(async () => {
     if (isPaying) return;
-    console.log("User Info ", userInfo)
+
     const subscriberMsisdn = (userInfo as any)?.phoneNumber;
     if (!subscriberMsisdn) {
       Alert.alert('Téléphone manquant', 'Votre numéro de téléphone est nécessaire pour procéder au paiement.');
@@ -231,8 +234,8 @@ const MerchandisesScreen = () => {
 
     setIsPaying(true);
     try {
-      const reference = `merch_${Date.now()}`;
-      const callbackUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}api/Payments/callback`;
+      const reference = `MERCH${Date.now().toString().slice(-6)}`;
+      const callbackUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/Payments/callback`;
 
       const resp = await initiateAirtelCollection({
         reference,
@@ -245,16 +248,23 @@ const MerchandisesScreen = () => {
 
       console.log("Payment response ", resp);
 
-      if (resp && resp.success) {
-        setCartItems([]);
-        setCartModalVisible(false);
-        Alert.alert('Paiement initié', 'La collecte a été initiée. Vous recevrez une confirmation.');
+      if (resp && resp.success && resp.data) {
+        setPaymentReference(resp.data.reference || reference);
+        setShowPaymentConfirmModal(false);
+        setShowPaymentSuccessModal(true);
+
+        // Clear cart after successful payment
+        setTimeout(() => {
+          setCartItems([]);
+        }, 1000);
       } else {
+        setShowPaymentConfirmModal(false);
         const msg = resp?.error || 'Échec de l\'initiation du paiement.';
         Alert.alert('Erreur de paiement', String(msg));
       }
     } catch (err) {
       console.error('Payment error', err);
+      setShowPaymentConfirmModal(false);
       Alert.alert('Erreur', 'Une erreur est survenue lors du paiement.');
     } finally {
       setIsPaying(false);
@@ -499,6 +509,106 @@ const MerchandisesScreen = () => {
           )}
         </View>
       </BottomModal>
+
+      {/* Payment Confirmation Modal */}
+      <BottomModal
+        visible={showPaymentConfirmModal}
+        onClose={() => !isPaying && setShowPaymentConfirmModal(false)}
+        title="Confirmer le paiement"
+        subtitle="Vérifiez les détails avant de continuer"
+        height={SCREEN_HEIGHT * 0.6}
+      >
+        <View style={styles.paymentConfirmContent}>
+          {/* Cart Items */}
+          <View style={styles.paymentDetailsSection}>
+            <Text style={styles.sectionTitle}>Articles</Text>
+            {cartItems.map(item => (
+              <View key={item.schoolMerchandiseId.toString()} style={styles.paymentDetailRow}>
+                <Text style={styles.detailLabel}>{item.schoolMerchandiseName}</Text>
+                <Text style={styles.detailValue}>x{item.quantity}</Text>
+                <Text style={styles.detailValue}>{(item.schoolMerchandisePrice * item.quantity).toLocaleString()} CFA</Text>
+              </View>
+            ))}
+            <View style={[styles.paymentDetailRow, styles.amountRow]}>
+              <Text style={styles.amountLabel}>Total à payer</Text>
+              <Text style={styles.amountValue}>{cartStats.total.toLocaleString()} CFA</Text>
+            </View>
+          </View>
+
+          {/* Payment Method */}
+          <View style={styles.paymentMethodSection}>
+            <Text style={styles.sectionTitle}>Méthode de paiement</Text>
+            <View style={styles.paymentMethodCard}>
+              <View style={styles.airtelLogoContainer}>
+                <Ionicons name="phone-portrait" size={scale(24)} color={colors.error.main} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.methodTitle}>Airtel Money</Text>
+                <Text style={styles.methodPhone}>{userInfo?.phoneNumber || ''}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={{ flexDirection: 'row', gap: spacingX._10, marginTop: spacingY._20 }}>
+            <SecondaryButton
+              title="Annuler"
+              onPress={() => setShowPaymentConfirmModal(false)}
+              style={{ flex: 1 }}
+              disabled={isPaying}
+            />
+            <PrimaryButton
+              title={isPaying ? '' : 'Confirmer'}
+              onPress={handlePay}
+              style={{ flex: 1 }}
+              disabled={isPaying}
+            >
+              {isPaying && <ActivityIndicator color="#fff" />}
+            </PrimaryButton>
+          </View>
+        </View>
+      </BottomModal>
+
+      {/* Payment Success Modal */}
+      <BottomModal
+        visible={showPaymentSuccessModal}
+        onClose={() => {
+          setShowPaymentSuccessModal(false);
+          setCartItems([]);
+        }}
+        title="Paiement initié"
+        subtitle="Suivez les instructions"
+        height={SCREEN_HEIGHT * 0.5}
+      >
+        <View style={styles.successModalContent}>
+          <View style={styles.successIconContainer}>
+            <Ionicons name="checkmark-circle" size={scale(80)} color={colors.success.main} />
+          </View>
+
+          <Text style={styles.successTitle}>Paiement en cours</Text>
+          <Text style={styles.successMessage}>
+            Vous allez recevoir une notification d&apos;Airtel Money sur votre téléphone.
+          </Text>
+          <Text style={styles.successInstruction}>
+            Veuillez entrer votre code PIN pour confirmer le paiement de {cartStats.total.toLocaleString()} CFA
+          </Text>
+
+          {/* Transaction Reference */}
+          <View style={styles.referenceContainer}>
+            <Text style={styles.referenceLabel}>Référence de transaction</Text>
+            <Text style={styles.referenceValue}>{paymentReference}</Text>
+          </View>
+
+          <PrimaryButton
+            title="Compris"
+            onPress={() => {
+              setShowPaymentSuccessModal(false);
+              setCartItems([]);
+            }}
+            style={{ marginTop: spacingY._20 }}
+          />
+        </View>
+      </BottomModal>
     </ScreenView>
   );
 };
@@ -640,5 +750,139 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(16),
     fontWeight: '700',
     color: colors.text.primary,
+  },
+
+  // Payment confirmation modal styles
+  paymentConfirmContent: {
+    paddingVertical: spacingY._10,
+  },
+  paymentDetailsSection: {
+    backgroundColor: colors.background.paper,
+    borderRadius: 12,
+    padding: spacingX._15,
+    marginBottom: spacingY._15,
+  },
+  sectionTitle: {
+    fontSize: scaleFont(14),
+    fontWeight: '600',
+    color: colors.text.secondary,
+    marginBottom: spacingY._10,
+    textTransform: 'uppercase',
+  },
+  paymentDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacingY._7,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border?.light || '#e6e9ed',
+  },
+  detailLabel: {
+    fontSize: scaleFont(14),
+    color: colors.text.primary,
+    flex: 2,
+  },
+  detailValue: {
+    fontSize: scaleFont(14),
+    color: colors.text.primary,
+    fontWeight: '500',
+    marginLeft: spacingX._5,
+  },
+  amountRow: {
+    borderBottomWidth: 0,
+    marginTop: spacingY._5,
+    paddingTop: spacingY._10,
+    borderTopWidth: 2,
+    borderTopColor: colors.primary.light,
+  },
+  amountLabel: {
+    fontSize: scaleFont(16),
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  amountValue: {
+    fontSize: scaleFont(18),
+    fontWeight: '700',
+    color: colors.primary.main,
+  },
+  paymentMethodSection: {
+    marginBottom: spacingY._10,
+  },
+  paymentMethodCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.paper,
+    borderRadius: 12,
+    padding: spacingX._15,
+    borderWidth: 2,
+    borderColor: colors.error.main + '20',
+  },
+  airtelLogoContainer: {
+    width: scale(48),
+    height: scale(48),
+    borderRadius: scale(24),
+    backgroundColor: colors.error.main + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacingX._12,
+  },
+  methodTitle: {
+    fontSize: scaleFont(16),
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacingY._3,
+  },
+  methodPhone: {
+    fontSize: scaleFont(14),
+    color: colors.text.secondary,
+  },
+
+  // Payment success modal styles
+  successModalContent: {
+    paddingVertical: spacingY._15,
+    alignItems: 'center',
+  },
+  successIconContainer: {
+    marginBottom: spacingY._20,
+  },
+  successTitle: {
+    fontSize: scaleFont(20),
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: spacingY._10,
+    textAlign: 'center',
+  },
+  successMessage: {
+    fontSize: scaleFont(14),
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacingY._10,
+    paddingHorizontal: spacingX._20,
+  },
+  successInstruction: {
+    fontSize: scaleFont(14),
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginBottom: spacingY._20,
+    paddingHorizontal: spacingX._20,
+    fontWeight: '500',
+  },
+  referenceContainer: {
+    backgroundColor: colors.background.paper,
+    borderRadius: 12,
+    padding: spacingX._15,
+    width: '100%',
+    alignItems: 'center',
+  },
+  referenceLabel: {
+    fontSize: scaleFont(12),
+    color: colors.text.secondary,
+    marginBottom: spacingY._5,
+    textTransform: 'uppercase',
+  },
+  referenceValue: {
+    fontSize: scaleFont(16),
+    fontWeight: '700',
+    color: colors.primary.main,
   },
 });

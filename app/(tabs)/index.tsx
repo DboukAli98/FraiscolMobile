@@ -9,7 +9,6 @@ import { ScreenView } from '@/components/ScreenView/ScreenView';
 import {
   colors,
   getTextStyle,
-  shadows,
   spacingX,
   spacingY,
 } from '@/constants/theme';
@@ -52,7 +51,6 @@ export default function HomeScreen() {
   const [totalFees, setTotalFees] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [periodMenuVisible, setPeriodMenuVisible] = useState(false);
   //#endregion
 
   //#region Recent Transactions Hook
@@ -127,7 +125,7 @@ export default function HomeScreen() {
       } else {
         Alert.alert("Erreur", error || "Une erreur s'est produite lors de la déconnexion.");
       }
-    } catch (error) {
+    } catch {
       Alert.alert("Erreur", "Une erreur s'est produite lors de la déconnexion.");
     }
   };
@@ -283,64 +281,70 @@ export default function HomeScreen() {
           <View style={styles.transactionsSection}>
             <View style={styles.transactionsSectionHeader}>
               <Text style={styles.sectionTitle}>Transactions récentes</Text>
-              <View style={styles.transactionsHeaderActions}>
-                {summary && (
-                  <>
-                    <TouchableOpacity
-                      style={styles.periodButton}
-                      onPress={() => setPeriodMenuVisible((v) => !v)}
-                    >
-                      <Text style={styles.periodButtonText}>
-                        {summary.timePeriod === 'week' ? 'Semaine' :
-                          summary.timePeriod === 'month' ? 'Mois' : 'Tout'}
-                      </Text>
-                      <Ionicons name={periodMenuVisible ? "chevron-up" : "chevron-down"} size={scale(14)} color={colors.primary.main} />
-                    </TouchableOpacity>
-
-                    {periodMenuVisible && (
-                      <View style={styles.periodMenu}>
-                        <TouchableOpacity
-                          style={styles.periodMenuItem}
-                          onPress={() => {
-                            handleChangePeriod('week');
-                            setPeriodMenuVisible(false);
-                          }}
-                        >
-                          <Text style={styles.periodMenuItemText}>Semaine</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.periodMenuItem}
-                          onPress={() => {
-                            handleChangePeriod('month');
-                            setPeriodMenuVisible(false);
-                          }}
-                        >
-                          <Text style={styles.periodMenuItemText}>Mois</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.periodMenuItem}
-                          onPress={() => {
-                            handleChangePeriod('all');
-                            setPeriodMenuVisible(false);
-                          }}
-                        >
-                          <Text style={styles.periodMenuItemText}>Tout</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </>
-                )}
-
-                {transactions.length > 0 && (
-                  <TouchableOpacity
-                    style={styles.viewAllButton}
-                    onPress={handleViewAllTransactions}
-                  >
-                    <Text style={styles.viewAllButtonText}>Voir tout</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              {transactions.length > 0 && (
+                <TouchableOpacity
+                  style={styles.viewAllButton}
+                  onPress={handleViewAllTransactions}
+                >
+                  <Text style={styles.viewAllButtonText}>Voir tout</Text>
+                  <Ionicons name="arrow-forward" size={scale(14)} color={colors.text.white} />
+                </TouchableOpacity>
+              )}
             </View>
+
+            {/* Period Filter Chips */}
+            {summary && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.periodChipsContainer}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.periodChip,
+                    summary.timePeriod === 'week' && styles.periodChipActive
+                  ]}
+                  onPress={() => handleChangePeriod('week')}
+                >
+                  <Text style={[
+                    styles.periodChipText,
+                    summary.timePeriod === 'week' && styles.periodChipTextActive
+                  ]}>
+                    Semaine
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.periodChip,
+                    summary.timePeriod === 'month' && styles.periodChipActive
+                  ]}
+                  onPress={() => handleChangePeriod('month')}
+                >
+                  <Text style={[
+                    styles.periodChipText,
+                    summary.timePeriod === 'month' && styles.periodChipTextActive
+                  ]}>
+                    Mois
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.periodChip,
+                    summary.timePeriod === 'all' && styles.periodChipActive
+                  ]}
+                  onPress={() => handleChangePeriod('all')}
+                >
+                  <Text style={[
+                    styles.periodChipText,
+                    summary.timePeriod === 'all' && styles.periodChipTextActive
+                  ]}>
+                    Tout
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
 
             {/* Transactions Summary */}
             {summary && (
@@ -637,27 +641,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Period dropdown menu
-  periodMenu: {
-    position: 'absolute',
-    top: spacingY._40,
-    right: 0,
-    backgroundColor: colors.background.default,
-    borderRadius: 8,
-    paddingVertical: spacingY._5,
-    paddingHorizontal: spacingX._5,
-    ...shadows.md,
-    zIndex: 10,
-  },
-  periodMenuItem: {
-    paddingVertical: spacingY._5,
-    paddingHorizontal: spacingX._10,
-  },
-  periodMenuItemText: {
-    fontSize: scaleFont(13),
-    color: colors.text.primary,
-  },
-
   // Transactions Section
   transactionsSection: {
     marginTop: spacingY._20,
@@ -666,35 +649,48 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacingY._15,
-  },
-  transactionsHeaderActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacingX._10,
-  },
-  periodButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacingX._10,
-    paddingVertical: spacingY._5,
-    borderWidth: 1,
-    borderColor: colors.primary.main,
-    borderRadius: 15,
-    gap: spacingX._5,
-  },
-  periodButtonText: {
-    fontSize: scaleFont(12),
-    color: colors.primary.main,
-    fontWeight: '500',
+    marginBottom: spacingY._10,
   },
   viewAllButton: {
-    paddingHorizontal: spacingX._10,
-    paddingVertical: spacingY._5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacingX._12,
+    paddingVertical: spacingY._7,
+    backgroundColor: colors.primary.light,
+    borderRadius: 20,
+    gap: spacingX._5,
   },
   viewAllButtonText: {
     fontSize: scaleFont(12),
-    color: colors.primary.main,
+    color: colors.text.white,
+    fontWeight: '600',
+  },
+
+  // Period Filter Chips
+  periodChipsContainer: {
+    paddingVertical: spacingY._10,
+    paddingBottom: spacingY._15,
+    gap: spacingX._7,
+  },
+  periodChip: {
+    paddingHorizontal: spacingX._15,
+    paddingVertical: spacingY._7,
+    borderRadius: 20,
+    backgroundColor: colors.background.paper,
+    borderWidth: 1.5,
+    borderColor: colors.border?.light || '#e1e5e9',
+  },
+  periodChipActive: {
+    backgroundColor: colors.primary.main,
+    borderColor: colors.primary.main,
+  },
+  periodChipText: {
+    fontSize: scaleFont(13),
+    color: colors.text.secondary,
+    fontWeight: '500',
+  },
+  periodChipTextActive: {
+    color: colors.text.white,
     fontWeight: '600',
   },
 

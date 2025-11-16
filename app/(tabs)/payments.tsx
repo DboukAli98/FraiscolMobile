@@ -51,7 +51,6 @@ const PaymentsScreen: React.FC = () => {
   const [schoolOptions, setSchoolOptions] = useState<FilterOption[]>([]);
   const [gradeSectionOptions, setGradeSectionOptions] = useState<FilterOption[]>([]);
   const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
-  const [filtersLoaded, setFiltersLoaded] = useState(false);
   const [showChildPicker, setShowChildPicker] = useState(false);
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
   const [showGradePicker, setShowGradePicker] = useState(false);
@@ -59,10 +58,11 @@ const PaymentsScreen: React.FC = () => {
   const [selectedPayment, setSelectedPayment] = useState<ParentInstallmentDto | null>(null);
   const [showPaymentDetailModal, setShowPaymentDetailModal] = useState(false);
 
-
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPaymentConfirmModal, setShowPaymentConfirmModal] = useState(false);
+  const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentInstallment, setPaymentInstallment] = useState<ParentInstallmentDto | null>(null);
+  const [paymentReference, setPaymentReference] = useState<string>('');
 
 
 
@@ -139,8 +139,6 @@ const PaymentsScreen: React.FC = () => {
       if (gradeSectionsResponse.success && gradeSectionsResponse.data) {
         setGradeSectionOptions(gradeSectionsResponse.data);
       }
-
-      setFiltersLoaded(true);
     } catch (err) {
       console.error('Failed to load filter options:', err);
     } finally {
@@ -168,34 +166,26 @@ const PaymentsScreen: React.FC = () => {
     return `PAYSF${sixDigits}`;
   }, []);
 
-  const handleInitiateAirtelPayment = useCallback(async (installment: ParentInstallmentDto) => {
-    console.log("ttetete")
-    console.log("payment instt ::: " + JSON.stringify(installment) + " pphooh ::: " + userInfo?.phoneNumber)
-    if (!installment || !userInfo?.phoneNumber) return;
+  const handleInitiateAirtelPayment = useCallback(async () => {
+    if (!paymentInstallment || !userInfo?.phoneNumber) return;
 
     setIsProcessingPayment(true);
 
     try {
-
-      const reference = generatePaymentReference(installment?.installmentId);
-
-
-      // const totalAmount = paymentInstallment.amount + (paymentInstallment.lateFee || 0);
-      const totalAmount = installment.amount;
-
-
+      const reference = generatePaymentReference(paymentInstallment.installmentId);
+      const totalAmount = paymentInstallment.amount;
       const callbackUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/Payments/callback`;
 
       console.log('🚀 Initiating Airtel payment:', {
         reference,
         phone: userInfo.phoneNumber,
         amount: totalAmount,
-        installmentId: installment.installmentId,
-        childName: installment.childName,
+        installmentId: paymentInstallment.installmentId,
+        childName: paymentInstallment.childName,
       });
 
       const response = await initiateAirtelCollection({
-        InstallmentId: installment.installmentId,
+        InstallmentId: paymentInstallment.installmentId,
         reference,
         subscriberMsisdn: userInfo.phoneNumber,
         amount: totalAmount,
@@ -206,27 +196,20 @@ const PaymentsScreen: React.FC = () => {
       if (response.success && response.data) {
         console.log('✅ Payment initiated successfully:', response.data);
 
-        setShowPaymentModal(false);
-        setPaymentInstallment(null);
+        setPaymentReference(response.data.reference);
+        setShowPaymentConfirmModal(false);
+        setShowPaymentSuccessModal(true);
 
-        Alert.alert(
-          'Paiement initié',
-          `Un SMS vous sera envoyé pour confirmer le paiement de ${formatCurrency(totalAmount)} pour ${installment.childName}.\n\nRéférence: ${response.data.reference}`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Optionally refresh the payments list
-                refresh();
-              }
-            }
-          ]
-        );
+        // Refresh the payments list
+        setTimeout(() => {
+          refresh();
+        }, 1000);
       } else {
         console.error('❌ Payment initiation failed:', response.error);
 
+        setShowPaymentConfirmModal(false);
+
         const errorMessage = response.error?.message || response.error || 'Échec de l\'initiation du paiement';
-        console.log("error message :::: ", errorMessage)
         Alert.alert(
           'Erreur de paiement',
           `Impossible d'initier le paiement: ${errorMessage}\n\nVeuillez réessayer.`,
@@ -236,6 +219,8 @@ const PaymentsScreen: React.FC = () => {
     } catch (error: any) {
       console.error('💥 Payment flow error:', error);
 
+      setShowPaymentConfirmModal(false);
+
       Alert.alert(
         'Erreur inattendue',
         error.message || 'Une erreur inattendue s\'est produite. Veuillez réessayer.',
@@ -244,21 +229,8 @@ const PaymentsScreen: React.FC = () => {
     } finally {
       setIsProcessingPayment(false);
     }
-  }, [paymentInstallment, generatePaymentReference, initiateAirtelCollection, formatCurrency, refresh]);
+  }, [paymentInstallment, userInfo?.phoneNumber, generatePaymentReference, initiateAirtelCollection, refresh]);
 
-
-  // Render payment item
-  const renderPaymentItem = useCallback(
-    ({ item }: { item: PaymentListItem }) => (
-      <PaymentItem
-        installment={item}
-        onPress={handlePaymentPress}
-        onPay={handlePaymentPay}
-        showActions={true}
-      />
-    ),
-    []
-  );
 
   // Event handlers
   const handlePaymentPress = useCallback(async (installment: ParentInstallmentDto) => {
@@ -273,9 +245,21 @@ const PaymentsScreen: React.FC = () => {
     }
 
     setPaymentInstallment(installment);
-    await handleInitiateAirtelPayment(installment);
-    setShowPaymentModal(true);
+    setShowPaymentConfirmModal(true);
   }, []);
+
+  // Render payment item
+  const renderPaymentItem = useCallback(
+    ({ item }: { item: PaymentListItem }) => (
+      <PaymentItem
+        installment={item}
+        onPress={handlePaymentPress}
+        onPay={handlePaymentPay}
+        showActions={true}
+      />
+    ),
+    [handlePaymentPress, handlePaymentPay]
+  );
 
   const handleClosePaymentDetailModal = useCallback(() => {
     setShowPaymentDetailModal(false);
@@ -702,6 +686,126 @@ const PaymentsScreen: React.FC = () => {
         onPay={handlePaymentPay}
       />
 
+      {/* Payment Confirmation Modal */}
+      <BottomModal
+        visible={showPaymentConfirmModal}
+        onClose={() => !isProcessingPayment && setShowPaymentConfirmModal(false)}
+        title="Confirmer le paiement"
+        subtitle="Vérifiez les détails avant de continuer"
+        height={SCREEN_HEIGHT * 0.6}
+      >
+        {paymentInstallment && (
+          <View style={styles.paymentConfirmContent}>
+            {/* Payment Details */}
+            <View style={styles.paymentDetailsSection}>
+              <View style={styles.paymentDetailRow}>
+                <Text style={styles.paymentDetailLabel}>Enfant</Text>
+                <Text style={styles.paymentDetailValue}>{paymentInstallment.childName}</Text>
+              </View>
+
+              <View style={styles.paymentDetailRow}>
+                <Text style={styles.paymentDetailLabel}>École</Text>
+                <Text style={styles.paymentDetailValue}>{paymentInstallment.schoolName}</Text>
+              </View>
+
+              <View style={styles.paymentDetailRow}>
+                <Text style={styles.paymentDetailLabel}>Type de paiement</Text>
+                <Text style={styles.paymentDetailValue}>Frais scolaires</Text>
+              </View>
+
+              <View style={styles.paymentDetailRow}>
+                <Text style={styles.paymentDetailLabel}>Date d&apos;échéance</Text>
+                <Text style={styles.paymentDetailValue}>
+                  {new Date(paymentInstallment.dueDate).toLocaleDateString('fr-FR')}
+                </Text>
+              </View>
+
+              <View style={[styles.paymentDetailRow, styles.amountRow]}>
+                <Text style={styles.paymentAmountLabel}>Montant à payer</Text>
+                <Text style={styles.paymentAmountValue}>{formatCurrency(paymentInstallment.amount)}</Text>
+              </View>
+            </View>
+
+            {/* Payment Method */}
+            <View style={styles.paymentMethodSection}>
+              <Text style={styles.paymentMethodTitle}>Méthode de paiement</Text>
+              <View style={styles.paymentMethodCard}>
+                <View style={styles.airtelLogoContainer}>
+                  <Ionicons name="phone-portrait" size={scale(32)} color="#FF0000" />
+                </View>
+                <View style={styles.paymentMethodInfo}>
+                  <Text style={styles.paymentMethodName}>Airtel Money</Text>
+                  <Text style={styles.paymentMethodPhone}>{userInfo?.phoneNumber || 'Non disponible'}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.paymentConfirmActions}>
+              <SecondaryButton
+                title="Annuler"
+                onPress={() => setShowPaymentConfirmModal(false)}
+                style={styles.cancelPaymentButton}
+                disabled={isProcessingPayment}
+              />
+              <PrimaryButton
+                title={isProcessingPayment ? "Traitement..." : "Confirmer"}
+                onPress={handleInitiateAirtelPayment}
+                style={styles.confirmPaymentButton}
+                disabled={isProcessingPayment}
+              />
+            </View>
+          </View>
+        )}
+      </BottomModal>
+
+      {/* Payment Success Modal */}
+      <BottomModal
+        visible={showPaymentSuccessModal}
+        onClose={() => {
+          setShowPaymentSuccessModal(false);
+          setPaymentInstallment(null);
+        }}
+        title="Paiement initié"
+        subtitle="Suivez les instructions"
+        height={SCREEN_HEIGHT * 0.5}
+      >
+        <View style={styles.successModalContent}>
+          <View style={styles.successIconContainer}>
+            <Ionicons name="checkmark-circle" size={scale(80)} color={colors.success.main} />
+          </View>
+
+          <Text style={styles.successTitle}>Paiement en cours</Text>
+
+          <Text style={styles.successMessage}>
+            Vous allez recevoir une notification d&apos;Airtel Money sur votre téléphone.
+          </Text>
+
+          <Text style={styles.successInstruction}>
+            Veuillez entrer votre code PIN pour confirmer le paiement de{' '}
+            <Text style={styles.successAmount}>
+              {paymentInstallment && formatCurrency(paymentInstallment.amount)}
+            </Text>
+          </Text>
+
+          {paymentReference && (
+            <View style={styles.referenceContainer}>
+              <Text style={styles.referenceLabel}>Référence de transaction</Text>
+              <Text style={styles.referenceValue}>{paymentReference}</Text>
+            </View>
+          )}
+
+          <PrimaryButton
+            title="Compris"
+            onPress={() => {
+              setShowPaymentSuccessModal(false);
+              setPaymentInstallment(null);
+            }}
+            style={styles.successButton}
+          />
+        </View>
+      </BottomModal>
+
     </ScreenView>
   );
 };
@@ -925,5 +1029,166 @@ const styles = StyleSheet.create({
   pickerOptionSelected: {
     color: colors.primary.main,
     fontWeight: '600',
+  },
+
+  // Payment Confirmation Modal
+  paymentConfirmContent: {
+    flex: 1,
+    paddingTop: spacingY._10,
+  },
+  paymentDetailsSection: {
+    backgroundColor: colors.background.default,
+    borderRadius: 12,
+    padding: spacingX._15,
+    marginBottom: spacingY._20,
+  },
+  paymentDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacingY._12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border?.light || '#e1e5e9',
+  },
+  paymentDetailLabel: {
+    fontSize: scaleFont(14),
+    color: colors.text.secondary,
+    flex: 1,
+  },
+  paymentDetailValue: {
+    fontSize: scaleFont(14),
+    color: colors.text.primary,
+    fontWeight: '500',
+    flex: 1,
+    textAlign: 'right',
+  },
+  amountRow: {
+    borderBottomWidth: 0,
+    paddingTop: spacingY._15,
+    marginTop: spacingY._5,
+    borderTopWidth: 2,
+    borderTopColor: colors.border?.main || '#d1d5db',
+  },
+  paymentAmountLabel: {
+    fontSize: scaleFont(16),
+    color: colors.text.primary,
+    fontWeight: '600',
+  },
+  paymentAmountValue: {
+    fontSize: scaleFont(18),
+    color: colors.primary.main,
+    fontWeight: '700',
+  },
+  paymentMethodSection: {
+    marginBottom: spacingY._20,
+  },
+  paymentMethodTitle: {
+    fontSize: scaleFont(14),
+    color: colors.text.secondary,
+    fontWeight: '500',
+    marginBottom: spacingY._10,
+  },
+  paymentMethodCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.default,
+    borderRadius: 12,
+    padding: spacingX._15,
+    borderWidth: 2,
+    borderColor: colors.primary.main,
+  },
+  airtelLogoContainer: {
+    width: scale(56),
+    height: scale(56),
+    borderRadius: scale(28),
+    backgroundColor: '#FFF5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacingX._15,
+  },
+  paymentMethodInfo: {
+    flex: 1,
+  },
+  paymentMethodName: {
+    fontSize: scaleFont(16),
+    color: colors.text.primary,
+    fontWeight: '600',
+    marginBottom: spacingY._3,
+  },
+  paymentMethodPhone: {
+    fontSize: scaleFont(14),
+    color: colors.text.secondary,
+  },
+  paymentConfirmActions: {
+    flexDirection: 'row',
+    gap: spacingX._10,
+    marginTop: 'auto',
+  },
+  cancelPaymentButton: {
+    flex: 1,
+  },
+  confirmPaymentButton: {
+    flex: 1,
+  },
+
+  // Payment Success Modal
+  successModalContent: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: spacingY._20,
+    paddingHorizontal: spacingX._20,
+  },
+  successIconContainer: {
+    marginBottom: spacingY._20,
+  },
+  successTitle: {
+    fontSize: scaleFont(22),
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: spacingY._15,
+    textAlign: 'center',
+  },
+  successMessage: {
+    fontSize: scaleFont(15),
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacingY._15,
+    lineHeight: scaleFont(22),
+  },
+  successInstruction: {
+    fontSize: scaleFont(15),
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginBottom: spacingY._20,
+    lineHeight: scaleFont(22),
+    paddingHorizontal: spacingX._10,
+  },
+  successAmount: {
+    fontSize: scaleFont(16),
+    fontWeight: '700',
+    color: colors.primary.main,
+  },
+  referenceContainer: {
+    backgroundColor: colors.background.default,
+    borderRadius: 12,
+    padding: spacingX._15,
+    marginBottom: spacingY._25,
+    width: '100%',
+    alignItems: 'center',
+  },
+  referenceLabel: {
+    fontSize: scaleFont(12),
+    color: colors.text.secondary,
+    marginBottom: spacingY._5,
+  },
+  referenceValue: {
+    fontSize: scaleFont(16),
+    fontWeight: '700',
+    color: colors.text.primary,
+    letterSpacing: 1,
+  },
+  successButton: {
+    width: '100%',
+    marginTop: 'auto',
   },
 });
