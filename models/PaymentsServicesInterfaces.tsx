@@ -1,11 +1,17 @@
 //Airtel Collection Request
+export interface MerchandiseItemDto {
+    MerchandiseId: number;
+    Quantity: number;
+}
+
 export interface InitiateAirtelCollectionParams {
-    reference: string;
-    subscriberMsisdn: string;
-    amount: number;
-    callbackUrl: string;
+    Reference: string;
+    SubscriberMsisdn: string;
+    Amount: number;
+    CallbackUrl: string;
     InstallmentId: number;
     PaymentType: string;
+    MerchandiseItems?: MerchandiseItemDto[];
 }
 
 // Airtel Collection Response

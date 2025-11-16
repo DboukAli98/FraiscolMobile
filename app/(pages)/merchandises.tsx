@@ -237,13 +237,20 @@ const MerchandisesScreen = () => {
       const reference = `MERCH${Date.now().toString().slice(-6)}`;
       const callbackUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/Payments/callback`;
 
+      // Build MerchandiseItems array from cart
+      const merchandiseItems = cartItems.map(item => ({
+        MerchandiseId: item.schoolMerchandiseId,
+        Quantity: item.quantity
+      }));
+
       const resp = await initiateAirtelCollection({
-        reference,
-        subscriberMsisdn,
-        amount,
-        callbackUrl,
-        InstallmentId: undefined,
-        PaymentType: "MERCHANDISEFEE"
+        Reference: reference,
+        SubscriberMsisdn: subscriberMsisdn,
+        Amount: amount,
+        CallbackUrl: callbackUrl,
+        InstallmentId: 0,
+        PaymentType: "MERCHANDISEFEE",
+        MerchandiseItems: merchandiseItems
       } as any);
 
       console.log("Payment response ", resp);
@@ -269,7 +276,7 @@ const MerchandisesScreen = () => {
     } finally {
       setIsPaying(false);
     }
-  }, [cartStats.total, initiateAirtelCollection, isPaying, userInfo]);
+  }, [cartStats.total, initiateAirtelCollection, isPaying, userInfo, cartItems]);
 
   // Memoized key extractor
   const keyExtractor = useCallback((item: MerchandiseListItem) =>

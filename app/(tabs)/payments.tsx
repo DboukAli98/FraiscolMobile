@@ -186,10 +186,10 @@ const PaymentsScreen: React.FC = () => {
 
       const response = await initiateAirtelCollection({
         InstallmentId: paymentInstallment.installmentId,
-        reference,
-        subscriberMsisdn: userInfo.phoneNumber,
-        amount: totalAmount,
-        callbackUrl,
+        Reference: reference,
+        SubscriberMsisdn: userInfo.phoneNumber,
+        Amount: totalAmount,
+        CallbackUrl: callbackUrl,
         PaymentType: "SCHOOLFEE"
       });
 

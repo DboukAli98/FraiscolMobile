@@ -15,21 +15,22 @@ export const useInitiateAirtelCollection = () => {
 
     const initiateAirtelCollection = useCallback(
         async ({
-            reference,
-            subscriberMsisdn,
-            amount,
-            callbackUrl,
+            Reference,
+            SubscriberMsisdn,
+            Amount,
+            CallbackUrl,
             InstallmentId,
-            PaymentType
-
+            PaymentType,
+            MerchandiseItems
         }: InitiateAirtelCollectionParams): Promise<ApiResponse<InitiateAirtelCollectionResponse>> => {
             const requestData = {
-                reference,
-                subscriberMsisdn,
-                amount,
-                callbackUrl,
+                Reference,
+                SubscriberMsisdn,
+                Amount,
+                CallbackUrl,
                 InstallmentId,
-                PaymentType
+                PaymentType,
+                MerchandiseItems
             };
 
             try {
