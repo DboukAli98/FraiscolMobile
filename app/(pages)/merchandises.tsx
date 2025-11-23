@@ -250,7 +250,8 @@ const MerchandisesScreen = () => {
         CallbackUrl: callbackUrl,
         InstallmentId: 0,
         PaymentType: "MERCHANDISEFEE",
-        MerchandiseItems: merchandiseItems
+        MerchandiseItems: merchandiseItems,
+        UserId: (userInfo as any)?.userId || userInfo?.parentId?.toString() || ''
       } as any);
 
       console.log("Payment response ", resp);

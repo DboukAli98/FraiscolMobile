@@ -190,7 +190,8 @@ const PaymentsScreen: React.FC = () => {
         SubscriberMsisdn: userInfo.phoneNumber,
         Amount: totalAmount,
         CallbackUrl: callbackUrl,
-        PaymentType: "SCHOOLFEE"
+        PaymentType: "SCHOOLFEE",
+        UserId: (userInfo as any)?.userId || userInfo.parentId?.toString() || ''
       });
 
       if (response.success && response.data) {
@@ -229,7 +230,7 @@ const PaymentsScreen: React.FC = () => {
     } finally {
       setIsProcessingPayment(false);
     }
-  }, [paymentInstallment, userInfo?.phoneNumber, generatePaymentReference, initiateAirtelCollection, refresh]);
+  }, [paymentInstallment, userInfo, generatePaymentReference, initiateAirtelCollection, refresh]);
 
 
   // Event handlers

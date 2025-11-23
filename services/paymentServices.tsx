@@ -21,7 +21,8 @@ export const useInitiateAirtelCollection = () => {
             CallbackUrl,
             InstallmentId,
             PaymentType,
-            MerchandiseItems
+            MerchandiseItems,
+            UserId
         }: InitiateAirtelCollectionParams): Promise<ApiResponse<InitiateAirtelCollectionResponse>> => {
             const requestData = {
                 Reference,
@@ -30,7 +31,8 @@ export const useInitiateAirtelCollection = () => {
                 CallbackUrl,
                 InstallmentId,
                 PaymentType,
-                MerchandiseItems
+                MerchandiseItems,
+                UserId
             };
 
             try {

@@ -12,6 +12,7 @@ export interface InitiateAirtelCollectionParams {
     InstallmentId: number;
     PaymentType: string;
     MerchandiseItems?: MerchandiseItemDto[];
+    UserId: string;
 }
 
 // Airtel Collection Response
