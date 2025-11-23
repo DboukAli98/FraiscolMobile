@@ -75,10 +75,10 @@ export const PaymentItem: React.FC<PaymentItemProps> = ({
                 };
             case 11:
                 return {
-                    text: 'En cours',
+                    text: 'En attente de confirmation',
                     color: colors.background.default,
-                    backgroundColor: colors.primary.light,
-                    icon: 'sync-outline' as keyof typeof Ionicons.glyphMap, // Better icon for "in progress"
+                    backgroundColor: colors.warning.light,
+                    icon: 'time-outline' as keyof typeof Ionicons.glyphMap,
                 };
             case 8:
                 return {
@@ -216,6 +216,26 @@ export const PaymentItem: React.FC<PaymentItemProps> = ({
                             />
                             <Text style={styles.payButtonText}>
                                 {isOverdue ? 'Payer (En retard)' : 'Payer'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Retry button for status 11 (pending confirmation) */}
+                {showActions && !installment.isPaid && installment.statusId === 11 && (
+                    <View style={styles.actions}>
+                        <TouchableOpacity
+                            style={[styles.payButton, styles.retryButton]}
+                            onPress={handlePay}
+                            accessibilityLabel="Réessayer le paiement"
+                        >
+                            <Ionicons
+                                name="refresh-outline"
+                                size={scale(16)}
+                                color={colors.text.white}
+                            />
+                            <Text style={styles.payButtonText}>
+                                Réessayer
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -420,6 +440,9 @@ const styles = StyleSheet.create({
     },
     urgentPayButton: {
         backgroundColor: colors.error.main,
+    },
+    retryButton: {
+        backgroundColor: colors.warning.main,
     },
     payButtonText: {
         fontSize: scaleFont(14),

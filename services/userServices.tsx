@@ -1,6 +1,9 @@
 import { GetParentDetailsParams, GetParentDetailsResponse, UpdateParentParams, UpdateParentResponse } from "@/models/ParentDetailsInterfaces";
+import { clearCredentials } from "@/redux/slices/authSlice";
+import type { AppDispatch } from "@/redux/store";
 import { router } from "expo-router";
 import { useCallback } from "react";
+import { useDispatch } from "react-redux";
 import useApiInstance from "./apiClient";
 import { School } from "./childrenServices";
 
@@ -339,13 +342,17 @@ export const useLogout = () => {
     },
   });
 
+  const dispatch = useDispatch<AppDispatch>();
+
   const logoutUser = useCallback(async (): Promise<ApiResponse> => {
     try {
       const response = await api.post("/api/Authentication/Logout");
 
+      // Clear credentials from Redux store (this will trigger redux-persist to clear AsyncStorage)
+      dispatch(clearCredentials());
 
       // Navigate to login screen
-      router.replace("/login");
+      router.replace("/(auth)/login");
 
       return {
         success: true,
@@ -357,6 +364,10 @@ export const useLogout = () => {
       const status = error.response ? error.response.status : 0;
       const errorData = error.response ? error.response.data : null;
 
+      // Clear credentials even if API call fails
+      dispatch(clearCredentials());
+      router.replace("/(auth)/login");
+
       return {
         success: false,
         status: status,
@@ -364,7 +375,7 @@ export const useLogout = () => {
         error: errorData || "An error occurred during logout",
       };
     }
-  }, [api]);
+  }, [api, dispatch]);
 
   return logoutUser;
 };

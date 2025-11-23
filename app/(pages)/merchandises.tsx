@@ -88,6 +88,7 @@ const MerchandisesScreen = () => {
   const [isPaying, setIsPaying] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [paymentReference, setPaymentReference] = useState<string>('');
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
   //#endregion
 
   const {
@@ -258,6 +259,7 @@ const MerchandisesScreen = () => {
 
       if (resp && resp.success && resp.data) {
         setPaymentReference(resp.data.reference || reference);
+        setPaymentAmount(amount);
         setShowPaymentConfirmModal(false);
         setShowPaymentSuccessModal(true);
 
@@ -598,7 +600,7 @@ const MerchandisesScreen = () => {
             Vous allez recevoir une notification d&apos;Airtel Money sur votre téléphone.
           </Text>
           <Text style={styles.successInstruction}>
-            Veuillez entrer votre code PIN pour confirmer le paiement de {cartStats.total.toLocaleString()} CFA
+            Veuillez entrer votre code PIN pour confirmer le paiement de {paymentAmount.toLocaleString()} CFA
           </Text>
 
           {/* Transaction Reference */}

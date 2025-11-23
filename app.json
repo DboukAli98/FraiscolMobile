@@ -4,7 +4,7 @@
     "slug": "FraiscolMobile",
     "version": "1.0.0",
     "orientation": "portrait",
-  "icon": "./assets/images/icon-legacy.png",
+    "icon": "./assets/images/icon-legacy.png",
     "scheme": "fraiscolmobile",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -14,7 +14,9 @@
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
-        ]
+        ],
+        "NSPhotoLibraryAddUsageDescription": "L'application a besoin d'accéder à votre bibliothèque pour enregistrer les reçus PDF.",
+        "NSPhotoLibraryUsageDescription": "L'application a besoin d'accéder à votre bibliothèque pour enregistrer les reçus PDF."
       },
       "entitlements": {
         "aps-environment": "development",
@@ -29,6 +31,13 @@
         "foregroundImage": "./assets/images/adaptive-icon-foreground.png",
         "backgroundImage": "./assets/images/adaptive-icon-background.png"
       },
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "READ_MEDIA_AUDIO"
+      ],
       "edgeToEdgeEnabled": true
     },
     "web": {
@@ -53,7 +62,8 @@
           "mode": "development"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
