@@ -251,7 +251,7 @@ const MerchandisesScreen = () => {
         InstallmentId: 0,
         PaymentType: "MERCHANDISEFEE",
         MerchandiseItems: merchandiseItems,
-        UserId: (userInfo as any)?.userId || userInfo?.parentId?.toString() || ''
+        UserId: (userInfo as any)?.id || ''
       } as any);
 
       console.log("Payment response ", resp);

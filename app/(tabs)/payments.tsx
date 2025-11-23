@@ -191,7 +191,7 @@ const PaymentsScreen: React.FC = () => {
         Amount: totalAmount,
         CallbackUrl: callbackUrl,
         PaymentType: "SCHOOLFEE",
-        UserId: (userInfo as any)?.userId || userInfo.parentId?.toString() || ''
+        UserId: userInfo.id || ''
       });
 
       if (response.success && response.data) {
