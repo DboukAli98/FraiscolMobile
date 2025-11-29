@@ -54,7 +54,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
             // If it has time but no timezone indicator, add Z
             isoString = dateString + 'Z';
         }
-        
+
         const date = new Date(isoString);
         const now = new Date();
         const diffMs = now.getTime() - date.getTime();
