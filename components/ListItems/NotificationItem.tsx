@@ -45,7 +45,17 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
     };
 
     const formatDate = (dateString: string): string => {
-        const date = new Date(dateString);
+        // Parse the date string - if it doesn't end with 'Z', add it to treat as UTC
+        let isoString = dateString;
+        if (!dateString.endsWith('Z') && !dateString.includes('+') && !dateString.includes('T')) {
+            // If it's just a date without timezone, treat as UTC
+            isoString = dateString + 'Z';
+        } else if (dateString.includes('T') && !dateString.endsWith('Z') && !dateString.includes('+')) {
+            // If it has time but no timezone indicator, add Z
+            isoString = dateString + 'Z';
+        }
+        
+        const date = new Date(isoString);
         const now = new Date();
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / 60000);
