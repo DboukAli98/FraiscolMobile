@@ -1,13 +1,16 @@
+import { BottomModal } from '@/components/BottomModal/BottomModal';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { colors, spacingX, spacingY } from '@/constants/theme';
 import { useParentProfile } from '@/hooks/useParentProfile';
+import { useSchoolsData } from '@/hooks/useSchoolsData';
 import {
     GetAllSupportRequestsParams,
     SupportRequest,
     SupportRequestDirection,
     SupportRequestStatus,
 } from '@/models/SupportRequestInterfaces';
+import { useGetParentsCollectingAgents } from '@/services/collectingAgentServices';
 import { useGetAllSupportRequests } from '@/services/supportRequestServices';
 import { scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +20,7 @@ import {
     ActivityIndicator,
     FlatList,
     RefreshControl,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -26,6 +30,8 @@ import {
 export default function SupportRequestsListScreen() {
     const { parentData } = useParentProfile();
     const getAllSupportRequests = useGetAllSupportRequests();
+    const getParentsCollectingAgents = useGetParentsCollectingAgents();
+    const { schools } = useSchoolsData();
 
     const [requests, setRequests] = useState<SupportRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +40,43 @@ export default function SupportRequestsListScreen() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [hasMore, setHasMore] = useState(true);
+
+    // Tab state
+    const [activeTab, setActiveTab] = useState<string>(SupportRequestDirection.PARENT_TO_DIRECTOR);
+
+    // Filter states
+    const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
+    const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
+    const [selectedRequestType, setSelectedRequestType] = useState<number | null>(null);
+    const [agents, setAgents] = useState<any[]>([]);
+    const [showFilterModal, setShowFilterModal] = useState(false);
+
+    // Fetch agents for filter
+    useEffect(() => {
+        const fetchAgents = async () => {
+            if (parentData?.parentId) {
+                try {
+                    const response = await getParentsCollectingAgents({
+                        parentId: parentData.parentId,
+                        pageNumber: 1,
+                        pageSize: 100,
+                    });
+
+                    if (response.success && response.data?.data) {
+                        const agentsList = response.data.data
+                            .filter((item: any) => item.isActive)
+                            .map((item: any) => item.collectingAgent);
+                        setAgents(agentsList);
+                    }
+                } catch (error) {
+                    console.error('Error fetching agents:', error);
+                }
+            }
+        };
+
+        fetchAgents();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [parentData?.parentId]);
 
     const fetchRequests = useCallback(
         async (page: number = 1, isRefresh: boolean = false) => {
@@ -49,9 +92,12 @@ export default function SupportRequestsListScreen() {
 
             try {
                 const params: GetAllSupportRequestsParams = {
-                    Source: SupportRequestDirection.PARENT_TO_DIRECTOR,
+                    Source: activeTab,
                     PageNumber: page,
                     PageSize: 10,
+                    SchoolId: selectedSchoolId || undefined,
+                    AgentId: selectedAgentId || undefined,
+                    SupportRequestType: selectedRequestType !== null ? selectedRequestType as any : undefined,
                 };
 
                 const response = await getAllSupportRequests(params);
@@ -77,14 +123,14 @@ export default function SupportRequestsListScreen() {
                 setIsLoadingMore(false);
             }
         },
-        [parentData?.parentId, getAllSupportRequests]
+        [parentData?.parentId, getAllSupportRequests, activeTab, selectedSchoolId, selectedAgentId, selectedRequestType]
     );
 
     useEffect(() => {
         if (parentData?.parentId) {
             fetchRequests(1);
         }
-    }, [parentData?.parentId, fetchRequests]);
+    }, [parentData?.parentId, fetchRequests, activeTab, selectedSchoolId, selectedAgentId, selectedRequestType]);
 
     const handleRefresh = () => {
         fetchRequests(1, true);
@@ -222,6 +268,14 @@ export default function SupportRequestsListScreen() {
         });
     };
 
+    const hasActiveFilters = selectedSchoolId !== null || selectedAgentId !== null || selectedRequestType !== null;
+
+    const resetFilters = () => {
+        setSelectedSchoolId(null);
+        setSelectedAgentId(null);
+        setSelectedRequestType(null);
+    };
+
     const renderRequestCard = ({ item }: { item: SupportRequest }) => {
         const statusColor = getStatusColor(item.fK_StatusId);
         const priorityColor = getPriorityColor(item.priority);
@@ -331,9 +385,228 @@ export default function SupportRequestsListScreen() {
         );
     }
 
+    const renderTabs = () => (
+        <View style={styles.tabsContainer}>
+            <TouchableOpacity
+                style={[
+                    styles.tab,
+                    activeTab === SupportRequestDirection.PARENT_TO_DIRECTOR && styles.activeTab,
+                ]}
+                onPress={() => setActiveTab(SupportRequestDirection.PARENT_TO_DIRECTOR)}
+            >
+                <Text
+                    style={[
+                        styles.tabText,
+                        activeTab === SupportRequestDirection.PARENT_TO_DIRECTOR && styles.activeTabText,
+                    ]}
+                >
+                    Au Directeur
+                </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[
+                    styles.tab,
+                    activeTab === SupportRequestDirection.PARENT_TO_AGENT && styles.activeTab,
+                ]}
+                onPress={() => setActiveTab(SupportRequestDirection.PARENT_TO_AGENT)}
+            >
+                <Text
+                    style={[
+                        styles.tabText,
+                        activeTab === SupportRequestDirection.PARENT_TO_AGENT && styles.activeTabText,
+                    ]}
+                >
+                    Aux Agents
+                </Text>
+            </TouchableOpacity>
+        </View>
+    );
+
+    const renderFilterChips = () => (
+        <View style={styles.filterChipsContainer}>
+            {/* School Filter Section */}
+            <View style={styles.filterSection}>
+                <View style={styles.filterSectionHeader}>
+                    <Ionicons name="school" size={18} color={colors.primary.main} />
+                    <Text style={styles.filterSectionTitle}>École</Text>
+                </View>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.chipsRow}
+                >
+                    <TouchableOpacity
+                        style={[styles.filterChip, !selectedSchoolId && styles.filterChipActive]}
+                        onPress={() => setSelectedSchoolId(null)}
+                    >
+                        <Text
+                            style={[
+                                styles.filterChipText,
+                                !selectedSchoolId && styles.filterChipTextActive,
+                            ]}
+                        >
+                            Toutes
+                        </Text>
+                    </TouchableOpacity>
+                    {schools.map((school) => (
+                        <TouchableOpacity
+                            key={school.schoolId}
+                            style={[
+                                styles.filterChip,
+                                selectedSchoolId === school.schoolId && styles.filterChipActive,
+                            ]}
+                            onPress={() => setSelectedSchoolId(school.schoolId)}
+                        >
+                            <Text
+                                style={[
+                                    styles.filterChipText,
+                                    selectedSchoolId === school.schoolId && styles.filterChipTextActive,
+                                ]}
+                                numberOfLines={1}
+                            >
+                                {school.schoolName}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+
+            {/* Agent Filter Section - Only show for PARENT_TO_AGENT tab */}
+            {activeTab === SupportRequestDirection.PARENT_TO_AGENT && agents.length > 0 && (
+                <View style={styles.filterSection}>
+                    <View style={styles.filterSectionHeader}>
+                        <Ionicons name="person" size={18} color={colors.primary.main} />
+                        <Text style={styles.filterSectionTitle}>Agent de collecte</Text>
+                    </View>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.chipsRow}
+                    >
+                        <TouchableOpacity
+                            style={[styles.filterChip, !selectedAgentId && styles.filterChipActive]}
+                            onPress={() => setSelectedAgentId(null)}
+                        >
+                            <Text
+                                style={[
+                                    styles.filterChipText,
+                                    !selectedAgentId && styles.filterChipTextActive,
+                                ]}
+                            >
+                                Tous
+                            </Text>
+                        </TouchableOpacity>
+                        {agents.map((agent) => (
+                            <TouchableOpacity
+                                key={agent.collectingAgentId}
+                                style={[
+                                    styles.filterChip,
+                                    selectedAgentId === agent.collectingAgentId && styles.filterChipActive,
+                                ]}
+                                onPress={() => setSelectedAgentId(agent.collectingAgentId)}
+                            >
+                                <Text
+                                    style={[
+                                        styles.filterChipText,
+                                        selectedAgentId === agent.collectingAgentId &&
+                                        styles.filterChipTextActive,
+                                    ]}
+                                    numberOfLines={1}
+                                >
+                                    {agent.firstName} {agent.lastName}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+
+            {/* Request Type Filter Section */}
+            <View style={styles.filterSection}>
+                <View style={styles.filterSectionHeader}>
+                    <Ionicons name="document-text" size={18} color={colors.primary.main} />
+                    <Text style={styles.filterSectionTitle}>Type de demande</Text>
+                </View>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.chipsRow}
+                >
+                    <TouchableOpacity
+                        style={[styles.filterChip, selectedRequestType === null && styles.filterChipActive]}
+                        onPress={() => setSelectedRequestType(null)}
+                    >
+                        <Text
+                            style={[
+                                styles.filterChipText,
+                                selectedRequestType === null && styles.filterChipTextActive,
+                            ]}
+                        >
+                            Tous
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.filterChip, selectedRequestType === 0 && styles.filterChipActive]}
+                        onPress={() => setSelectedRequestType(0)}
+                    >
+                        <Text
+                            style={[
+                                styles.filterChipText,
+                                selectedRequestType === 0 && styles.filterChipTextActive,
+                            ]}
+                        >
+                            Général
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.filterChip, selectedRequestType === 1 && styles.filterChipActive]}
+                        onPress={() => setSelectedRequestType(1)}
+                    >
+                        <Text
+                            style={[
+                                styles.filterChipText,
+                                selectedRequestType === 1 && styles.filterChipTextActive,
+                            ]}
+                        >
+                            Paiement
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.filterChip, selectedRequestType === 2 && styles.filterChipActive]}
+                        onPress={() => setSelectedRequestType(2)}
+                    >
+                        <Text
+                            style={[
+                                styles.filterChipText,
+                                selectedRequestType === 2 && styles.filterChipTextActive,
+                            ]}
+                        >
+                            Aide
+                        </Text>
+                    </TouchableOpacity>
+                </ScrollView>
+            </View>
+        </View>
+    );
+
     return (
         <ScreenView safeArea padding={false} backgroundColor={colors.background.default}>
-            <PageHeader title="Mes demandes" onBack={handleBack} />
+            <PageHeader
+                title="Mes demandes"
+                onBack={handleBack}
+                actions={[
+                    {
+                        icon: 'filter',
+                        onPress: () => setShowFilterModal(true),
+                        color: (selectedSchoolId || selectedAgentId || selectedRequestType !== null)
+                            ? colors.primary.main
+                            : colors.text.primary,
+                    },
+                ]}
+            />
+
+            {/* Tabs */}
+            {renderTabs()}
 
             {/* Stats Header */}
             <View style={styles.statsContainer}>
@@ -390,6 +663,34 @@ export default function SupportRequestsListScreen() {
             <TouchableOpacity style={styles.fab} onPress={handleNewRequest} activeOpacity={0.8}>
                 <Ionicons name="add" size={28} color={colors.text.white} />
             </TouchableOpacity>
+
+            {/* Filter Modal */}
+            <BottomModal
+                visible={showFilterModal}
+                onClose={() => setShowFilterModal(false)}
+                title="Filtrer les demandes"
+            >
+                <View style={styles.filterModalContent}>
+                    {renderFilterChips()}
+                    <View style={styles.filterModalActions}>
+                        {hasActiveFilters && (
+                            <TouchableOpacity
+                                style={styles.resetFilterButton}
+                                onPress={resetFilters}
+                            >
+                                <Ionicons name="refresh" size={18} color={colors.text.secondary} />
+                                <Text style={styles.resetFilterButtonText}>Réinitialiser</Text>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                            style={[styles.applyFilterButton, !hasActiveFilters && styles.applyFilterButtonFull]}
+                            onPress={() => setShowFilterModal(false)}
+                        >
+                            <Text style={styles.applyFilterButtonText}>Appliquer les filtres</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </BottomModal>
         </ScreenView>
     );
 }
@@ -399,6 +700,112 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    tabsContainer: {
+        flexDirection: 'row',
+        backgroundColor: colors.background.paper,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border?.light || '#E5E7EB',
+    },
+    tab: {
+        flex: 1,
+        paddingVertical: spacingY._15,
+        alignItems: 'center',
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    activeTab: {
+        borderBottomColor: colors.primary.main,
+    },
+    tabText: {
+        fontSize: scaleFont(14),
+        fontWeight: '600',
+        color: colors.text.secondary,
+    },
+    activeTabText: {
+        color: colors.primary.main,
+    },
+    filterChipsContainer: {
+        gap: spacingY._15,
+    },
+    filterSection: {
+        gap: spacingY._7,
+    },
+    filterSectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacingX._7,
+        paddingHorizontal: spacingX._15,
+    },
+    filterSectionTitle: {
+        fontSize: scaleFont(14),
+        fontWeight: '600',
+        color: colors.text.primary,
+    },
+    chipsRow: {
+        paddingHorizontal: spacingX._15,
+        gap: spacingX._7,
+    },
+    filterChip: {
+        paddingHorizontal: spacingX._15,
+        paddingVertical: spacingY._7,
+        borderRadius: 20,
+        backgroundColor: colors.background.paper,
+        borderWidth: 1,
+        borderColor: colors.border?.light || '#E5E7EB',
+    },
+    filterChipActive: {
+        backgroundColor: colors.primary.main,
+        borderColor: colors.primary.main,
+    },
+    filterChipText: {
+        fontSize: scaleFont(13),
+        color: colors.text.primary,
+        fontWeight: '500',
+    },
+    filterChipTextActive: {
+        color: colors.text.white,
+    },
+    filterModalContent: {
+        padding: spacingX._20,
+        paddingBottom: spacingY._30,
+    },
+    filterModalActions: {
+        flexDirection: 'row',
+        gap: spacingX._10,
+        marginTop: spacingY._20,
+    },
+    resetFilterButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacingX._5,
+        backgroundColor: colors.background.default,
+        paddingVertical: spacingY._12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.border?.light || '#E5E7EB',
+    },
+    resetFilterButtonText: {
+        fontSize: scaleFont(14),
+        fontWeight: '600',
+        color: colors.text.secondary,
+    },
+    applyFilterButton: {
+        flex: 1,
+        backgroundColor: colors.primary.main,
+        paddingVertical: spacingY._12,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    applyFilterButtonFull: {
+        flex: 1,
+    },
+    applyFilterButtonText: {
+        fontSize: scaleFont(15),
+        fontWeight: '600',
+        color: colors.text.white,
     },
     statsContainer: {
         flexDirection: 'row',

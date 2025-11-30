@@ -203,3 +203,76 @@ export const useGetCollectingAgentParents = () => {
 
     return getCollectingAgentParents;
 };
+
+/**
+ * Hook: useGetParentsCollectingAgents
+ * Calls GET /api/CollectingAgent/GetParentsCollectingAgents
+ * Gets all collecting agents assigned to a specific parent
+ */
+export const useGetParentsCollectingAgents = () => {
+    const api = useApiInstance({
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept-Language': 'fr',
+        },
+    });
+
+    const getParentsCollectingAgents = useCallback(
+        async ({
+            parentId,
+            pageNumber = 1,
+            pageSize = 10,
+        }: {
+            parentId: number;
+            pageNumber?: number;
+            pageSize?: number;
+        }): Promise<ApiResponse<{
+            data: any[] | null;
+            pageNumber: number;
+            pageSize: number;
+            totalCount: number;
+            status: string;
+            error: any | null;
+            message: string | null;
+        }>> => {
+            const params = new URLSearchParams({
+                ParentId: parentId.toString(),
+                PageNumber: pageNumber.toString(),
+                PageSize: pageSize.toString(),
+            }).toString();
+
+            try {
+                const response = await api.get(
+                    `/api/CollectingAgent/GetParentsCollectingAgents?${params}`
+                );
+
+                return {
+                    success: true,
+                    status: response.status,
+                    data: response.data,
+                    error: null,
+                };
+            } catch (error: any) {
+                const status = error.response ? error.response.status : 0;
+                const errorData = error.response ? error.response.data : null;
+
+                console.error('❌ Get Parents Collecting Agents Error:', {
+                    status,
+                    errorData,
+                    parentId,
+                    response: error?.response?.data,
+                });
+
+                return {
+                    success: false,
+                    status,
+                    data: null,
+                    error: errorData || 'Une erreur est survenue lors de la récupération des agents.',
+                };
+            }
+        },
+        [api]
+    );
+
+    return getParentsCollectingAgents;
+};

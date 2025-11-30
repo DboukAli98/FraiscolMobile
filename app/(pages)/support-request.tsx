@@ -11,6 +11,7 @@ import {
     SupportRequestPriority,
     SupportRequestType,
 } from '@/models/SupportRequestInterfaces';
+import { useGetParentsCollectingAgents } from '@/services/collectingAgentServices';
 import { useAddSupportRequest } from '@/services/supportRequestServices';
 import { scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,16 +48,45 @@ export default function SupportRequestScreen() {
     const { schools, isLoading: isLoadingSchools } = useSchoolsData();
 
     // Get parent's agents (only when PARENT_TO_AGENT is selected)
+    const getParentsCollectingAgents = useGetParentsCollectingAgents();
     const [agents, setAgents] = useState<any[]>([]);
-    const [isLoadingAgents] = useState(false);
+    const [isLoadingAgents, setIsLoadingAgents] = useState(false);
+    const [hasCheckedAgents, setHasCheckedAgents] = useState(false);
 
+    // Fetch agents on mount to check availability
     useEffect(() => {
-        if (direction === SupportRequestDirection.PARENT_TO_AGENT && parentData?.parentId) {
-            // TODO: Fetch parent's agents
-            // For now, we'll use an empty array
-            setAgents([]);
-        }
-    }, [direction, parentData?.parentId]);
+        const fetchAgents = async () => {
+            if (parentData?.parentId && !hasCheckedAgents) {
+                setIsLoadingAgents(true);
+                try {
+                    const response = await getParentsCollectingAgents({
+                        parentId: parentData.parentId,
+                        pageNumber: 1,
+                        pageSize: 100,
+                    });
+
+                    if (response.success && response.data?.data) {
+                        // Map the collecting agent parent relationships to agents
+                        const agentsList = response.data.data
+                            .filter((item: any) => item.isActive)
+                            .map((item: any) => item.collectingAgent);
+                        setAgents(agentsList);
+                    } else {
+                        setAgents([]);
+                    }
+                } catch (error) {
+                    console.error('Error fetching agents:', error);
+                    setAgents([]);
+                } finally {
+                    setIsLoadingAgents(false);
+                    setHasCheckedAgents(true);
+                }
+            }
+        };
+
+        fetchAgents();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [parentData?.parentId, hasCheckedAgents]);
 
     const handleBack = () => {
         router.back();
@@ -260,13 +290,32 @@ export default function SupportRequestScreen() {
                             selectedValue={direction}
                             options={[
                                 { label: 'Directeur', value: SupportRequestDirection.PARENT_TO_DIRECTOR },
-                                { label: 'Agent de collecte', value: SupportRequestDirection.PARENT_TO_AGENT },
+                                {
+                                    label: 'Agent de collecte',
+                                    value: SupportRequestDirection.PARENT_TO_AGENT
+                                },
                             ]}
                             onSelect={(value: string | number) => {
+                                // Prevent selection if no agents available
+                                if (value === SupportRequestDirection.PARENT_TO_AGENT && hasCheckedAgents && agents.length === 0) {
+                                    Alert.alert(
+                                        'Non disponible',
+                                        'Aucun agent de collecte n\'est disponible pour vous actuellement.'
+                                    );
+                                    return;
+                                }
                                 setDirection(value as string);
                                 setSelectedAgentId(null);
                             }}
                         />
+                        {hasCheckedAgents && agents.length === 0 && (
+                            <View style={styles.warningContainer}>
+                                <Ionicons name="information-circle" size={16} color={colors.warning.main} />
+                                <Text style={styles.warningText}>
+                                    Aucun agent de collecte n&apos;est disponible pour vous
+                                </Text>
+                            </View>
+                        )}
                     </View>
 
                     {/* School Selection */}
@@ -420,6 +469,21 @@ const styles = StyleSheet.create({
         fontSize: scaleFont(12),
         color: colors.error.main,
         marginTop: spacingY._5,
+    },
+    warningContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.warning.light + '20',
+        padding: spacingX._10,
+        borderRadius: 8,
+        marginTop: spacingY._7,
+        gap: spacingX._7,
+    },
+    warningText: {
+        flex: 1,
+        fontSize: scaleFont(12),
+        color: colors.warning.dark,
+        lineHeight: scaleFont(16),
     },
     submitButton: {
         flexDirection: 'row',
