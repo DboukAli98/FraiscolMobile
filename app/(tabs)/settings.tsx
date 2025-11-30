@@ -327,6 +327,23 @@ const SettingsScreen = () => {
         {/* Support */}
         <SectionHeader title="Support" />
 
+        {!isAgent && (
+          <>
+            <SettingItem
+              icon="list-outline"
+              title="Mes demandes d'assistance"
+              subtitle="Voir toutes vos demandes"
+              onPress={() => router.push('/(pages)/support-requests-list')}
+            />
+            <SettingItem
+              icon="help-buoy-outline"
+              title="Nouvelle demande"
+              subtitle="Créer une demande d'assistance"
+              onPress={() => router.push('/(pages)/support-request')}
+            />
+          </>
+        )}
+
         <SettingItem
           icon="help-circle-outline"
           title="Centre d'aide"
