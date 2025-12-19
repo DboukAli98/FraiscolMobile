@@ -103,17 +103,6 @@ export const SchoolItem: React.FC<SchoolItemProps> = ({
                             {school.schoolName}
                         </Text>
 
-                        <View style={styles.detailsRow}>
-                            <Ionicons
-                                name="location-outline"
-                                size={scale(14)}
-                                color={colors.text.secondary}
-                            />
-                            <Text style={styles.detailText} numberOfLines={2}>
-                                {school.schoolAddress}
-                            </Text>
-                        </View>
-
                         {school.schoolPhoneNumber && (
                             <View style={styles.detailsRow}>
                                 <Ionicons
@@ -139,17 +128,6 @@ export const SchoolItem: React.FC<SchoolItemProps> = ({
                                 </Text>
                             </View>
                         )}
-
-                        <View style={styles.detailsRow}>
-                            <Ionicons
-                                name="calendar-outline"
-                                size={scale(14)}
-                                color={colors.text.secondary}
-                            />
-                            <Text style={styles.detailText}>
-                                Établi en {school.schoolEstablishedYear}
-                            </Text>
-                        </View>
                     </View>
                 </View>
 
@@ -264,12 +242,12 @@ const styles = StyleSheet.create({
     },
     content: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
     },
     leftSection: {
         flex: 1,
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
     },
     avatar: {
         width: scale(55),

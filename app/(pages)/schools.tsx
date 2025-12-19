@@ -132,6 +132,9 @@ const SchoolsScreen = () => {
     // Memoized list header
     const ListHeaderComponent = useCallback(() => (
         <View style={styles.header}>
+            <Text style={styles.infoNote}>
+                Veuillez noter que ces écoles sont celles où vos enfants sont inscrits.
+            </Text>
             {totalCount > 0 && (
                 <Text style={styles.subtitle}>
                     {totalCount} école{totalCount > 1 ? 's' : ''} trouvée{totalCount > 1 ? 's' : ''}
@@ -206,5 +209,11 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 14,
         color: colors.text.secondary,
+    },
+    infoNote: {
+        fontSize: 14,
+        color: colors.text.secondary,
+        marginBottom: spacingY._10,
+        fontStyle: 'italic',
     },
 });
