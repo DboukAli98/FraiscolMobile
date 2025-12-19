@@ -373,7 +373,7 @@ const SchoolDetailsScreen = () => {
                                     <Ionicons name="library-outline" size={20} color={colors.primary.main} />
                                     <View style={styles.detailContent}>
                                         <Text style={styles.detailLabel}>Section {index + 1}</Text>
-                                        <Text style={styles.detailValue}>{section.name || 'Non spécifié'}</Text>
+                                        <Text style={styles.detailValue}>{section.schoolGradeName || 'Non spécifié'}</Text>
                                     </View>
                                 </View>
                             ))}
