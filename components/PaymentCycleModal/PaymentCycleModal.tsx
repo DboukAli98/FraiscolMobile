@@ -1,7 +1,7 @@
 // components/PaymentCycleModal/PaymentCycleModal.tsx
 import { BottomModal } from '@/components/BottomModal/BottomModal';
 import { CustomButton } from '@/components/Button/CustomPressable';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
@@ -169,23 +169,26 @@ export const PaymentCycleModal: React.FC<PaymentCycleModalProps> = ({
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Sélectionner un cycle de paiement"
+            title="Cycle de paiement"
             subtitle="Choisissez le mode de paiement pour cet enfant"
-            height={SCREEN_HEIGHT * 0.9}
+            height={SCREEN_HEIGHT * 0.85}
             enableDragToExpand={true}
+            enableSwipeDown={true}
         >
             <View style={styles.modalContent}>
                 {isLoading ? (
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" color={colors.primary.main} />
-                        <Text style={styles.loadingText}>Chargement des cycles de paiement...</Text>
+                        <Text style={styles.loadingText}>Chargement des cycles...</Text>
                     </View>
                 ) : paymentCycles.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="document-outline" size={64} color={colors.text.disabled} />
-                        <Text style={styles.emptyTitle}>Aucun cycle de paiement</Text>
+                        <View style={styles.emptyIconContainer}>
+                            <Ionicons name="document-text-outline" size={48} color={colors.text.disabled} />
+                        </View>
+                        <Text style={styles.emptyTitle}>Aucun cycle disponible</Text>
                         <Text style={styles.emptySubtitle}>
-                            {"Aucun cycle de paiement n'est disponible pour cette classe."}
+                            {"Aucun cycle de paiement n'est configuré pour cette classe."}
                         </Text>
                     </View>
                 ) : (
@@ -206,6 +209,8 @@ export const PaymentCycleModal: React.FC<PaymentCycleModalProps> = ({
                                 fullWidth
                                 variant="filled"
                                 color="primary"
+                                shadow
+                                leftIcon="checkmark-circle"
                             />
                         </View>
                     </>
@@ -218,6 +223,7 @@ export const PaymentCycleModal: React.FC<PaymentCycleModalProps> = ({
 const styles = StyleSheet.create({
     modalContent: {
         flex: 1,
+        paddingHorizontal: spacingX._15,
     },
     loadingContainer: {
         flex: 1,
@@ -228,6 +234,7 @@ const styles = StyleSheet.create({
         marginTop: spacingY._10,
         fontSize: scaleFont(14),
         color: colors.text.secondary,
+        fontWeight: '500',
     },
     emptyContainer: {
         flex: 1,
@@ -235,11 +242,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: spacingX._30,
     },
+    emptyIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: colors.surface.main,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: spacingY._20,
+    },
     emptyTitle: {
         fontSize: scaleFont(18),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.primary,
-        marginTop: spacingY._20,
         marginBottom: spacingY._10,
     },
     emptySubtitle: {
@@ -249,19 +264,21 @@ const styles = StyleSheet.create({
         lineHeight: scaleFont(20),
     },
     listContainer: {
-        paddingBottom: spacingY._20,
+        paddingVertical: spacingY._10,
     },
     cycleItem: {
-        backgroundColor: colors.background.paper,
-        borderRadius: 12,
+        backgroundColor: colors.surface.main,
+        borderRadius: radius._12,
         padding: spacingX._15,
-        marginBottom: spacingY._10,
-        borderWidth: 2,
-        borderColor: 'transparent',
+        marginBottom: spacingY._12,
+        borderWidth: 1.5,
+        borderColor: colors.border.main,
+        ...shadows.sm,
     },
     cycleItemSelected: {
         borderColor: colors.primary.main,
-        backgroundColor: colors.primary.light + '10',
+        backgroundColor: colors.primary.light + '08',
+        ...shadows.md,
     },
     cycleHeader: {
         flexDirection: 'row',
@@ -269,10 +286,10 @@ const styles = StyleSheet.create({
         marginBottom: spacingY._10,
     },
     cycleIconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.background.default,
+        width: 44,
+        height: 44,
+        borderRadius: radius._10,
+        backgroundColor: colors.primary.light + '15',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: spacingX._12,
@@ -282,24 +299,25 @@ const styles = StyleSheet.create({
     },
     cycleName: {
         fontSize: scaleFont(16),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.primary,
-        marginBottom: spacingY._3,
+        marginBottom: spacingY._2,
     },
     cycleNameSelected: {
         color: colors.primary.main,
     },
     cycleType: {
-        fontSize: scaleFont(13),
+        fontSize: scaleFont(14),
         color: colors.text.secondary,
+        fontWeight: '500',
     },
     cycleSelection: {
         marginLeft: spacingX._10,
     },
     radioButton: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
         borderWidth: 2,
         borderColor: colors.text.disabled,
         justifyContent: 'center',
@@ -309,34 +327,35 @@ const styles = StyleSheet.create({
         borderColor: colors.primary.main,
     },
     radioButtonInner: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+        width: 12,
+        height: 12,
+        borderRadius: 6,
         backgroundColor: colors.primary.main,
     },
     cycleDescription: {
         fontSize: scaleFont(13),
         color: colors.text.secondary,
-        marginBottom: spacingY._10,
+        marginBottom: spacingY._12,
         lineHeight: scaleFont(18),
     },
     cycleDetails: {
-        paddingTop: spacingY._10,
+        paddingTop: spacingY._12,
         borderTopWidth: 1,
-        borderTopColor: colors.border?.light || '#e1e5e9',
+        borderTopColor: colors.border.light,
     },
     cycleDetailText: {
         fontSize: scaleFont(12),
         color: colors.text.secondary,
-        marginBottom: spacingY._3,
+        marginBottom: spacingY._4,
     },
     cycleDetailLabel: {
         fontWeight: '600',
         color: colors.text.primary,
     },
     footer: {
-        paddingTop: spacingY._20,
+        paddingVertical: spacingY._20,
         borderTopWidth: 1,
-        borderTopColor: colors.border?.light || '#e1e5e9',
+        borderTopColor: colors.border.light,
+        backgroundColor: colors.background.paper,
     },
 });

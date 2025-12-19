@@ -1,7 +1,7 @@
 import { BottomModal } from '@/components/BottomModal/BottomModal';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { useParentProfile } from '@/hooks/useParentProfile';
 import { useSchoolsData } from '@/hooks/useSchoolsData';
 import {
@@ -12,7 +12,7 @@ import {
 } from '@/models/SupportRequestInterfaces';
 import { useGetParentsCollectingAgents } from '@/services/collectingAgentServices';
 import { useGetAllSupportRequests } from '@/services/supportRequestServices';
-import { scaleFont } from '@/utils/stylings';
+import { scale, scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -703,15 +703,13 @@ const styles = StyleSheet.create({
     },
     tabsContainer: {
         flexDirection: 'row',
-        backgroundColor: colors.background.paper,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border?.light || '#E5E7EB',
+        backgroundColor: colors.background.default,
     },
     tab: {
         flex: 1,
         paddingVertical: spacingY._15,
         alignItems: 'center',
-        borderBottomWidth: 2,
+        borderBottomWidth: 3,
         borderBottomColor: 'transparent',
     },
     activeTab: {
@@ -739,7 +737,7 @@ const styles = StyleSheet.create({
     },
     filterSectionTitle: {
         fontSize: scaleFont(14),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.primary,
     },
     chipsRow: {
@@ -749,10 +747,10 @@ const styles = StyleSheet.create({
     filterChip: {
         paddingHorizontal: spacingX._15,
         paddingVertical: spacingY._7,
-        borderRadius: 20,
-        backgroundColor: colors.background.paper,
+        borderRadius: radius.full,
+        backgroundColor: colors.surface.main,
         borderWidth: 1,
-        borderColor: colors.border?.light || '#E5E7EB',
+        borderColor: colors.border.light,
     },
     filterChipActive: {
         backgroundColor: colors.primary.main,
@@ -761,7 +759,7 @@ const styles = StyleSheet.create({
     filterChipText: {
         fontSize: scaleFont(13),
         color: colors.text.primary,
-        fontWeight: '500',
+        fontWeight: '600',
     },
     filterChipTextActive: {
         color: colors.text.white,
@@ -772,7 +770,7 @@ const styles = StyleSheet.create({
     },
     filterModalActions: {
         flexDirection: 'row',
-        gap: spacingX._10,
+        gap: spacingX._12,
         marginTop: spacingY._20,
     },
     resetFilterButton: {
@@ -783,9 +781,9 @@ const styles = StyleSheet.create({
         gap: spacingX._5,
         backgroundColor: colors.background.default,
         paddingVertical: spacingY._12,
-        borderRadius: 12,
+        borderRadius: radius._12,
         borderWidth: 1,
-        borderColor: colors.border?.light || '#E5E7EB',
+        borderColor: colors.border.main,
     },
     resetFilterButtonText: {
         fontSize: scaleFont(14),
@@ -796,7 +794,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.primary.main,
         paddingVertical: spacingY._12,
-        borderRadius: 12,
+        borderRadius: radius._12,
         alignItems: 'center',
     },
     applyFilterButtonFull: {
@@ -804,19 +802,20 @@ const styles = StyleSheet.create({
     },
     applyFilterButtonText: {
         fontSize: scaleFont(15),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.white,
     },
     statsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-around',
-        backgroundColor: colors.background.paper,
+        backgroundColor: colors.surface.main,
         paddingVertical: spacingY._20,
         paddingHorizontal: spacingX._20,
+        marginHorizontal: spacingX._15,
+        marginTop: spacingY._15,
         marginBottom: spacingY._10,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border?.light || '#E5E7EB',
+        borderRadius: radius._16,
     },
     statItem: {
         alignItems: 'center',
@@ -824,19 +823,21 @@ const styles = StyleSheet.create({
     },
     statValue: {
         fontSize: scaleFont(24),
-        fontWeight: '700',
+        fontWeight: '800',
         color: colors.primary.main,
         marginBottom: spacingY._3,
     },
     statLabel: {
         fontSize: scaleFont(12),
         color: colors.text.secondary,
-        fontWeight: '500',
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     statDivider: {
         width: 1,
         height: 40,
-        backgroundColor: colors.border?.light || '#E5E7EB',
+        backgroundColor: colors.border.main,
     },
     listContainer: {
         padding: spacingX._15,
@@ -847,16 +848,12 @@ const styles = StyleSheet.create({
     },
     card: {
         backgroundColor: colors.background.paper,
-        borderRadius: 16,
+        borderRadius: radius._16,
         padding: spacingX._15,
         marginBottom: spacingY._15,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
+        ...shadows.sm,
         borderWidth: 1,
-        borderColor: colors.border?.light || '#E5E7EB',
+        borderColor: colors.border.light,
     },
     cardHeader: {
         flexDirection: 'row',
@@ -871,9 +868,9 @@ const styles = StyleSheet.create({
         marginRight: spacingX._10,
     },
     typeIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: scale(40),
+        height: scale(40),
+        borderRadius: radius.full,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: spacingX._12,
@@ -883,22 +880,23 @@ const styles = StyleSheet.create({
     },
     cardTitle: {
         fontSize: scaleFont(16),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.primary,
         marginBottom: spacingY._3,
     },
     cardSchool: {
         fontSize: scaleFont(13),
         color: colors.text.secondary,
+        fontWeight: '500',
     },
     priorityBadge: {
         paddingHorizontal: spacingX._10,
         paddingVertical: spacingY._5,
-        borderRadius: 12,
+        borderRadius: radius._8,
     },
     priorityText: {
         fontSize: scaleFont(11),
-        fontWeight: '600',
+        fontWeight: '700',
     },
     cardDescription: {
         fontSize: scaleFont(14),
@@ -912,7 +910,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingTop: spacingY._12,
         borderTopWidth: 1,
-        borderTopColor: colors.border?.light || '#E5E7EB',
+        borderTopColor: colors.border.light,
     },
     cardFooterLeft: {
         flexDirection: 'row',
@@ -920,31 +918,33 @@ const styles = StyleSheet.create({
     },
     statusText: {
         fontSize: scaleFont(13),
-        fontWeight: '600',
+        fontWeight: '700',
         marginLeft: spacingX._5,
     },
     dateText: {
         fontSize: scaleFont(12),
-        color: colors.text.secondary,
+        color: colors.text.disabled,
+        fontWeight: '500',
     },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: spacingX._30,
+        paddingVertical: spacingY._50,
     },
     emptyIconContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: colors.background.default,
+        width: scale(100),
+        height: scale(100),
+        borderRadius: radius.full,
+        backgroundColor: colors.surface.main,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: spacingY._20,
     },
     emptyTitle: {
         fontSize: scaleFont(20),
-        fontWeight: '700',
+        fontWeight: '800',
         color: colors.text.primary,
         marginBottom: spacingY._10,
     },
@@ -954,19 +954,21 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: spacingY._25,
         lineHeight: scaleFont(20),
+        fontWeight: '500',
     },
     emptyButton: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.primary.main,
-        paddingHorizontal: spacingX._20,
+        paddingHorizontal: spacingX._25,
         paddingVertical: spacingY._12,
-        borderRadius: 12,
+        borderRadius: radius.full,
         gap: spacingX._7,
+        ...shadows.md,
     },
     emptyButtonText: {
         fontSize: scaleFont(15),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.white,
     },
     loadingFooter: {
@@ -977,16 +979,12 @@ const styles = StyleSheet.create({
         position: 'absolute',
         right: spacingX._20,
         bottom: spacingY._20,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: scale(56),
+        height: scale(56),
+        borderRadius: radius.full,
         backgroundColor: colors.primary.main,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: colors.primary.main,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-        elevation: 8,
+        ...shadows.lg,
     },
 });

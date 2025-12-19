@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { PaymentCycleModal } from '@/components/PaymentCycleModal/PaymentCycleModal';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
 import { SectionSelectionModal } from '@/components/SelectionModals/SectionSelectionModal';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { ChildGrade, ChildGradeSelection, PaymentCycle, useAddChildGrade, useGetChildrenGrade, useGetChildrenGradeSelection, useGetPaymentCycles, useSelectChildCycleSelection } from '@/services/childGradeServices';
 import { ChildDetailsData, useGetChildrenDetails } from '@/services/childrenServices';
 import { SchoolGradeSection, useGetSchoolGradesSections } from '@/services/schoolsServices';
@@ -722,6 +722,7 @@ const styles = StyleSheet.create({
         marginTop: spacingY._10,
         fontSize: scaleFont(16),
         color: colors.text.secondary,
+        fontWeight: '500',
     },
     errorContainer: {
         flex: 1,
@@ -734,18 +735,20 @@ const styles = StyleSheet.create({
         color: colors.error.main,
         textAlign: 'center',
         marginVertical: spacingY._20,
+        fontWeight: '500',
     },
     retryButton: {
         backgroundColor: colors.primary.main,
-        paddingHorizontal: spacingX._20,
-        paddingVertical: spacingY._10,
-        borderRadius: 8,
+        paddingHorizontal: spacingX._25,
+        paddingVertical: spacingY._12,
+        borderRadius: radius.full,
         marginTop: spacingY._10,
+        ...shadows.sm,
     },
     retryButtonText: {
         color: colors.text.white,
         fontSize: scaleFont(14),
-        fontWeight: '600',
+        fontWeight: '700',
     },
     backButton: {
         backgroundColor: colors.secondary.main,
@@ -755,37 +758,39 @@ const styles = StyleSheet.create({
     profileSection: {
         alignItems: 'center',
         paddingVertical: spacingY._30,
-        backgroundColor: colors.background.paper,
-        marginBottom: spacingY._20,
+        backgroundColor: colors.background.default,
+        marginBottom: spacingY._10,
     },
     avatar: {
         width: scale(80),
         height: scale(80),
-        borderRadius: scale(40),
-        backgroundColor: colors.primary.light,
+        borderRadius: radius.full,
+        backgroundColor: colors.primary.main,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: spacingY._15,
+        ...shadows.md,
     },
     avatarText: {
         fontSize: scaleFont(28),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.white,
     },
     name: {
         fontSize: scaleFont(24),
-        fontWeight: 'bold',
+        fontWeight: '800',
         color: colors.text.primary,
         marginBottom: spacingY._10,
+        letterSpacing: -0.5,
     },
     statusBadge: {
         paddingHorizontal: spacingX._15,
         paddingVertical: spacingY._5,
-        borderRadius: 20,
+        borderRadius: radius.full,
     },
     statusText: {
         fontSize: scaleFont(12),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.white,
     },
 
@@ -796,18 +801,16 @@ const styles = StyleSheet.create({
     },
     card: {
         backgroundColor: colors.background.paper,
-        borderRadius: 12,
+        borderRadius: radius._16,
         padding: spacingX._20,
         marginBottom: spacingY._15,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        ...shadows.sm,
+        borderWidth: 1,
+        borderColor: colors.border.light,
     },
     cardTitle: {
         fontSize: scaleFont(16),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.primary,
         marginBottom: spacingY._15,
     },
@@ -824,27 +827,32 @@ const styles = StyleSheet.create({
         fontSize: scaleFont(12),
         color: colors.text.secondary,
         marginBottom: spacingY._3,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     detailValue: {
-        fontSize: scaleFont(14),
-        fontWeight: '500',
+        fontSize: scaleFont(15),
+        fontWeight: '600',
         color: colors.text.primary,
     },
     detailSubValue: {
-        fontSize: scaleFont(12),
+        fontSize: scaleFont(13),
         color: colors.text.secondary,
         marginTop: spacingY._3,
+        fontWeight: '400',
     },
     linkText: {
         color: colors.primary.main,
         textDecorationLine: 'underline',
+        fontWeight: '600',
     },
 
     // Payment Cycle Section
     noCycleRow: {
         paddingTop: spacingY._10,
         borderTopWidth: 1,
-        borderTopColor: colors.border?.light || '#e1e5e9',
+        borderTopColor: colors.border.light,
         marginTop: spacingY._5,
     },
     selectCycleButton: {
@@ -856,11 +864,12 @@ const styles = StyleSheet.create({
         color: colors.text.secondary,
         marginTop: spacingY._7,
         fontStyle: 'italic',
+        fontWeight: '400',
     },
     noSectionContainer: {
         paddingTop: spacingY._10,
         borderTopWidth: 1,
-        borderTopColor: colors.border?.light || '#e1e5e9',
+        borderTopColor: colors.border.light,
         marginTop: spacingY._5,
     },
     selectSectionButton: {
@@ -872,5 +881,6 @@ const styles = StyleSheet.create({
         color: colors.text.secondary,
         marginTop: spacingY._7,
         fontStyle: 'italic',
+        fontWeight: '400',
     },
 });

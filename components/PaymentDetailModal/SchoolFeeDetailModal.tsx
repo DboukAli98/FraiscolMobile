@@ -1,6 +1,6 @@
 import { BottomModal } from '@/components/BottomModal/BottomModal';
-import { PrimaryButton } from '@/components/Button/CustomPressable';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { CustomButton } from '@/components/Button/CustomPressable';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { SchoolFeesPaymentHistoryDto } from '@/models/PaymentsServicesInterfaces';
 import { scale, scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
@@ -74,6 +74,7 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
             subtitle="Frais scolaires"
             height={SCREEN_HEIGHT * 0.85}
             enableDragToExpand={true}
+            enableSwipeDown={true}
         >
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.container}>
@@ -81,14 +82,17 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
                     <View style={styles.statusContainer}>
                         <View style={[
                             styles.statusBadge,
-                            payment.fK_StatusId === 8 && styles.statusSuccess
+                            payment.fK_StatusId === 8 ? styles.statusSuccess : styles.statusPending
                         ]}>
                             <Ionicons
                                 name={payment.fK_StatusId === 8 ? "checkmark-circle" : "time"}
-                                size={scale(24)}
-                                color={colors.background.default}
+                                size={scale(20)}
+                                color={payment.fK_StatusId === 8 ? colors.success.main : colors.warning.main}
                             />
-                            <Text style={styles.statusText}>
+                            <Text style={[
+                                styles.statusText,
+                                { color: payment.fK_StatusId === 8 ? colors.success.main : colors.warning.main }
+                            ]}>
                                 {payment.fK_StatusId === 8 ? 'Paiement réussi' : 'En attente'}
                             </Text>
                         </View>
@@ -99,7 +103,7 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
                         <Text style={styles.sectionTitle}>{"Informations de l'élève"}</Text>
                         <View style={styles.sectionContent}>
                             <View style={styles.infoRow}>
-                                <Ionicons name="person-outline" size={scale(16)} color={colors.text.secondary} />
+                                <Ionicons name="person-outline" size={scale(18)} color={colors.text.secondary} />
                                 <View style={styles.infoTextContainer}>
                                     <Text style={styles.infoLabel}>Nom complet</Text>
                                     <Text style={styles.infoValue}>{payment.childFullName}</Text>
@@ -108,7 +112,7 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
 
                             {payment.dateOfBirth && (
                                 <View style={styles.infoRow}>
-                                    <Ionicons name="calendar-outline" size={scale(16)} color={colors.text.secondary} />
+                                    <Ionicons name="calendar-outline" size={scale(18)} color={colors.text.secondary} />
                                     <View style={styles.infoTextContainer}>
                                         <Text style={styles.infoLabel}>Date de naissance</Text>
                                         <Text style={styles.infoValue}>
@@ -120,7 +124,7 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
 
                             {payment.fatherName && (
                                 <View style={styles.infoRow}>
-                                    <Ionicons name="man-outline" size={scale(16)} color={colors.text.secondary} />
+                                    <Ionicons name="man-outline" size={scale(18)} color={colors.text.secondary} />
                                     <View style={styles.infoTextContainer}>
                                         <Text style={styles.infoLabel}>Nom du père</Text>
                                         <Text style={styles.infoValue}>{payment.fatherName}</Text>
@@ -135,7 +139,7 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
                         <Text style={styles.sectionTitle}>Informations scolaires</Text>
                         <View style={styles.sectionContent}>
                             <View style={styles.infoRow}>
-                                <Ionicons name="school-outline" size={scale(16)} color={colors.text.secondary} />
+                                <Ionicons name="school-outline" size={scale(18)} color={colors.text.secondary} />
                                 <View style={styles.infoTextContainer}>
                                     <Text style={styles.infoLabel}>École</Text>
                                     <Text style={styles.infoValue}>{payment.schoolName}</Text>
@@ -143,7 +147,7 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
                             </View>
 
                             <View style={styles.infoRow}>
-                                <Ionicons name="library-outline" size={scale(16)} color={colors.text.secondary} />
+                                <Ionicons name="library-outline" size={scale(18)} color={colors.text.secondary} />
                                 <View style={styles.infoTextContainer}>
                                     <Text style={styles.infoLabel}>Classe</Text>
                                     <Text style={styles.infoValue}>{payment.schoolGradeName}</Text>
@@ -187,10 +191,8 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
                                 </Text>
                             </View>
 
-                            <View style={styles.divider} />
-
                             <View style={styles.infoRow}>
-                                <Ionicons name="card-outline" size={scale(16)} color={colors.text.secondary} />
+                                <Ionicons name="card-outline" size={scale(18)} color={colors.text.secondary} />
                                 <View style={styles.infoTextContainer}>
                                     <Text style={styles.infoLabel}>Méthode de paiement</Text>
                                     <Text style={styles.infoValue}>{payment.paymentMethod}</Text>
@@ -198,7 +200,7 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
                             </View>
 
                             <View style={styles.infoRow}>
-                                <Ionicons name="receipt-outline" size={scale(16)} color={colors.text.secondary} />
+                                <Ionicons name="receipt-outline" size={scale(18)} color={colors.text.secondary} />
                                 <View style={styles.infoTextContainer}>
                                     <Text style={styles.infoLabel}>Référence</Text>
                                     <Text style={styles.infoValue}>
@@ -207,33 +209,18 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
                                 </View>
                             </View>
 
-                            {payment.transactionMapId && (
-                                <View style={styles.infoRow}>
-                                    <Ionicons name="qr-code-outline" size={scale(16)} color={colors.text.secondary} />
-                                    <View style={styles.infoTextContainer}>
-                                        <Text style={styles.infoLabel}>ID de transaction</Text>
-                                        <Text style={styles.infoValue} numberOfLines={1}>
-                                            {payment.transactionMapId}
-                                        </Text>
-                                    </View>
-                                </View>
-                            )}
-
                             <View style={styles.infoRow}>
-                                <Ionicons name="time-outline" size={scale(16)} color={colors.text.secondary} />
+                                <Ionicons name="time-outline" size={scale(18)} color={colors.text.secondary} />
                                 <View style={styles.infoTextContainer}>
                                     <Text style={styles.infoLabel}>Date et heure</Text>
                                     <Text style={styles.infoValue}>
-                                        {formatDate(payment.paidDate)}
-                                    </Text>
-                                    <Text style={styles.infoSubValue}>
-                                        à {formatTime(payment.paidDate)}
+                                        {formatDate(payment.paidDate)} à {formatTime(payment.paidDate)}
                                     </Text>
                                 </View>
                             </View>
 
                             <View style={styles.infoRow}>
-                                <Ionicons name="hourglass-outline" size={scale(16)} color={colors.text.secondary} />
+                                <Ionicons name="hourglass-outline" size={scale(18)} color={colors.text.secondary} />
                                 <View style={styles.infoTextContainer}>
                                     <Text style={styles.infoLabel}>{"Date d'échéance"}</Text>
                                     <Text style={styles.infoValue}>
@@ -244,13 +231,13 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
                         </View>
                     </View>
 
-                    {/* Agent Information (if applicable) */}
+                    {/* Agent Information */}
                     {payment.processedByAgent && payment.agentFullName && (
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Agent collecteur</Text>
                             <View style={styles.sectionContent}>
                                 <View style={styles.infoRow}>
-                                    <Ionicons name="briefcase-outline" size={scale(16)} color={colors.text.secondary} />
+                                    <Ionicons name="person-outline" size={scale(18)} color={colors.text.secondary} />
                                     <View style={styles.infoTextContainer}>
                                         <Text style={styles.infoLabel}>{"Nom de l'agent"}</Text>
                                         <Text style={styles.infoValue}>{payment.agentFullName}</Text>
@@ -259,7 +246,7 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
 
                                 {payment.agentPhoneNumber && (
                                     <View style={styles.infoRow}>
-                                        <Ionicons name="call-outline" size={scale(16)} color={colors.text.secondary} />
+                                        <Ionicons name="call-outline" size={scale(18)} color={colors.text.secondary} />
                                         <View style={styles.infoTextContainer}>
                                             <Text style={styles.infoLabel}>Téléphone</Text>
                                             <Text style={styles.infoValue}>{payment.agentPhoneNumber}</Text>
@@ -272,10 +259,14 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
 
                     {/* Export Button */}
                     <View style={styles.actionSection}>
-                        <PrimaryButton
-                            title="📄 Exporter en PDF"
+                        <CustomButton
+                            title="Exporter en PDF"
                             onPress={handleExportPDF}
-                            style={styles.exportButton}
+                            variant="filled"
+                            color="primary"
+                            leftIcon="document-text"
+                            fullWidth
+                            shadow
                         />
                     </View>
                 </View>
@@ -289,142 +280,134 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     container: {
-        paddingBottom: spacingY._20,
+        paddingHorizontal: spacingX._15,
+        paddingBottom: spacingY._30,
     },
     statusContainer: {
         alignItems: 'center',
-        marginBottom: spacingY._20,
+        marginVertical: spacingY._20,
     },
     statusBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacingX._10,
+        gap: spacingX._7,
         paddingHorizontal: spacingX._20,
-        paddingVertical: spacingY._12,
-        backgroundColor: colors.warning.light,
-        borderRadius: 50,
+        paddingVertical: spacingY._10,
+        borderRadius: radius.full,
     },
     statusSuccess: {
-        backgroundColor: colors.success.light,
+        backgroundColor: colors.success.light + '20',
+    },
+    statusPending: {
+        backgroundColor: colors.warning.light + '20',
     },
     statusText: {
         fontSize: scaleFont(16),
         fontWeight: '700',
-        color: colors.background.default,
     },
     section: {
-        marginBottom: spacingY._20,
+        marginBottom: spacingY._25,
     },
     sectionTitle: {
         fontSize: scaleFont(14),
         fontWeight: '700',
-        color: colors.text.primary,
+        color: colors.text.disabled,
         marginBottom: spacingY._12,
         textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        letterSpacing: 1,
     },
     sectionContent: {
-        backgroundColor: colors.background.default,
-        borderRadius: 12,
-        padding: spacingX._15,
-        gap: spacingY._12,
+        backgroundColor: colors.surface.main,
+        borderRadius: radius._16,
+        padding: spacingX._20,
+        ...shadows.sm,
+        borderWidth: 1,
+        borderColor: colors.border.light,
     },
     infoRow: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: spacingX._10,
+        alignItems: 'center',
+        gap: spacingX._12,
+        marginBottom: spacingY._12,
     },
     infoTextContainer: {
         flex: 1,
     },
     infoLabel: {
-        fontSize: scaleFont(12),
-        color: colors.text.secondary,
-        marginBottom: spacingY._3,
+        fontSize: scaleFont(11),
+        color: colors.text.disabled,
+        fontWeight: '600',
+        marginBottom: spacingY._2,
     },
     infoValue: {
         fontSize: scaleFont(14),
-        fontWeight: '500',
+        fontWeight: '600',
         color: colors.text.primary,
     },
-    infoSubValue: {
-        fontSize: scaleFont(12),
-        color: colors.text.secondary,
-        marginTop: spacingY._3,
-    },
     descriptionContainer: {
-        paddingTop: spacingY._7,
+        paddingTop: spacingY._10,
         borderTopWidth: 1,
-        borderTopColor: colors.border?.light || '#e1e5e9',
+        borderTopColor: colors.border.light,
+        marginTop: spacingY._5,
     },
     descriptionText: {
         fontSize: scaleFont(13),
         color: colors.text.secondary,
         lineHeight: scaleFont(20),
+        fontWeight: '500',
     },
     amountRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingBottom: spacingY._7,
+        marginBottom: spacingY._8,
     },
     amountLabel: {
         fontSize: scaleFont(13),
         color: colors.text.secondary,
+        fontWeight: '500',
     },
     amountValue: {
         fontSize: scaleFont(16),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.primary,
     },
     lateFeeRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingBottom: spacingY._7,
+        marginBottom: spacingY._8,
     },
     lateFeeLabel: {
         fontSize: scaleFont(13),
         color: colors.error.main,
+        fontWeight: '600',
     },
     lateFeeValue: {
         fontSize: scaleFont(14),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.error.main,
     },
     totalRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingTop: spacingY._10,
-        paddingBottom: spacingY._10,
-        borderTopWidth: 2,
+        paddingBottom: spacingY._15,
+        marginBottom: spacingY._15,
         borderBottomWidth: 1,
-        borderTopColor: colors.border?.main || '#d1d5db',
-        borderBottomColor: colors.border?.light || '#e1e5e9',
+        borderBottomColor: colors.border.light,
     },
     totalLabel: {
-        fontSize: scaleFont(15),
+        fontSize: scaleFont(16),
         fontWeight: '700',
         color: colors.text.primary,
     },
     totalValue: {
-        fontSize: scaleFont(18),
-        fontWeight: '700',
+        fontSize: scaleFont(20),
+        fontWeight: '800',
         color: colors.primary.main,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: colors.border?.light || '#e1e5e9',
-        marginVertical: spacingY._7,
     },
     actionSection: {
         marginTop: spacingY._10,
-    },
-    exportButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacingX._10,
     },
 });

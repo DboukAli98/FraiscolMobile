@@ -1,7 +1,7 @@
 // components/SectionSelectionModal/SectionSelectionModal.tsx
 import { BottomModal } from '@/components/BottomModal/BottomModal';
 import { CustomButton } from '@/components/Button/CustomPressable';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
@@ -134,7 +134,8 @@ export const SectionSelectionModal: React.FC<SectionSelectionModalProps> = ({
             title="Sélectionner une section"
             subtitle="Choisissez la classe pour cet enfant"
             enableDragToExpand={true}
-            height={SCREEN_HEIGHT * 0.9}
+            enableSwipeDown={true}
+            height={SCREEN_HEIGHT * 0.85}
         >
             <View style={styles.modalContent}>
                 {isLoading ? (
@@ -144,10 +145,12 @@ export const SectionSelectionModal: React.FC<SectionSelectionModalProps> = ({
                     </View>
                 ) : sections.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="library-outline" size={64} color={colors.text.disabled} />
+                        <View style={styles.emptyIconContainer}>
+                            <Ionicons name="library-outline" size={48} color={colors.text.disabled} />
+                        </View>
                         <Text style={styles.emptyTitle}>Aucune section disponible</Text>
                         <Text style={styles.emptySubtitle}>
-                            {"Aucune section n'est disponible pour cette école."}
+                            {"Aucune section n'est disponible pour cette école actuellement."}
                         </Text>
                     </View>
                 ) : (
@@ -168,6 +171,8 @@ export const SectionSelectionModal: React.FC<SectionSelectionModalProps> = ({
                                 fullWidth
                                 variant="filled"
                                 color="primary"
+                                shadow
+                                leftIcon="checkmark-circle"
                             />
                         </View>
                     </>
@@ -180,6 +185,7 @@ export const SectionSelectionModal: React.FC<SectionSelectionModalProps> = ({
 const styles = StyleSheet.create({
     modalContent: {
         flex: 1,
+        paddingHorizontal: spacingX._15,
     },
     loadingContainer: {
         flex: 1,
@@ -190,6 +196,7 @@ const styles = StyleSheet.create({
         marginTop: spacingY._10,
         fontSize: scaleFont(14),
         color: colors.text.secondary,
+        fontWeight: '500',
     },
     emptyContainer: {
         flex: 1,
@@ -197,11 +204,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: spacingX._30,
     },
+    emptyIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: colors.surface.main,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: spacingY._20,
+    },
     emptyTitle: {
         fontSize: scaleFont(18),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.primary,
-        marginTop: spacingY._20,
         marginBottom: spacingY._10,
     },
     emptySubtitle: {
@@ -211,19 +226,21 @@ const styles = StyleSheet.create({
         lineHeight: scaleFont(20),
     },
     listContainer: {
-        paddingBottom: spacingY._20,
+        paddingVertical: spacingY._10,
     },
     sectionItem: {
-        backgroundColor: colors.background.paper,
-        borderRadius: 12,
+        backgroundColor: colors.surface.main,
+        borderRadius: radius._12,
         padding: spacingX._15,
-        marginBottom: spacingY._10,
-        borderWidth: 2,
-        borderColor: 'transparent',
+        marginBottom: spacingY._12,
+        borderWidth: 1.5,
+        borderColor: colors.border.main,
+        ...shadows.sm,
     },
     sectionItemSelected: {
         borderColor: colors.primary.main,
-        backgroundColor: colors.primary.light + '10',
+        backgroundColor: colors.primary.light + '08',
+        ...shadows.md,
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -231,10 +248,10 @@ const styles = StyleSheet.create({
         marginBottom: spacingY._10,
     },
     sectionIconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.background.default,
+        width: 44,
+        height: 44,
+        borderRadius: radius._10,
+        backgroundColor: colors.primary.light + '15',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: spacingX._12,
@@ -244,25 +261,25 @@ const styles = StyleSheet.create({
     },
     sectionName: {
         fontSize: scaleFont(16),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.primary,
-        marginBottom: spacingY._3,
+        marginBottom: spacingY._2,
     },
     sectionNameSelected: {
         color: colors.primary.main,
     },
     sectionFee: {
-        fontSize: scaleFont(13),
+        fontSize: scaleFont(14),
         color: colors.success.main,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     sectionSelection: {
         marginLeft: spacingX._10,
     },
     radioButton: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
         borderWidth: 2,
         borderColor: colors.text.disabled,
         justifyContent: 'center',
@@ -272,21 +289,23 @@ const styles = StyleSheet.create({
         borderColor: colors.primary.main,
     },
     radioButtonInner: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+        width: 12,
+        height: 12,
+        borderRadius: 6,
         backgroundColor: colors.primary.main,
     },
     sectionDescription: {
         fontSize: scaleFont(13),
         color: colors.text.secondary,
-        marginBottom: spacingY._10,
+        marginBottom: spacingY._12,
         lineHeight: scaleFont(18),
     },
     sectionDetails: {
-        paddingTop: spacingY._10,
+        paddingTop: spacingY._12,
         borderTopWidth: 1,
-        borderTopColor: colors.border?.light || '#e1e5e9',
+        borderTopColor: colors.border.light,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     sectionDetailText: {
         fontSize: scaleFont(12),
@@ -297,8 +316,9 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
     },
     footer: {
-        paddingTop: spacingY._20,
+        paddingVertical: spacingY._20,
         borderTopWidth: 1,
-        borderTopColor: colors.border?.light || '#e1e5e9',
+        borderTopColor: colors.border.light,
+        backgroundColor: colors.background.paper,
     },
 });

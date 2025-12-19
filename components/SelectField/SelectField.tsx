@@ -1,5 +1,5 @@
 // components/SelectField/SelectField.tsx
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
@@ -67,7 +67,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
     );
 
     return (
-        <View>
+        <View style={styles.container}>
             {label && (
                 <Text style={styles.label}>{label}</Text>
             )}
@@ -80,17 +80,18 @@ export const SelectField: React.FC<SelectFieldProps> = ({
                 ]}
                 onPress={() => !disabled && setIsVisible(true)}
                 disabled={disabled}
+                activeOpacity={0.7}
             >
                 <Text style={[
                     styles.selectText,
                     !selectedOption && styles.placeholderText,
                     disabled && styles.disabledText
-                ]}>
+                ]} numberOfLines={1}>
                     {selectedOption ? selectedOption.label : placeholder}
                 </Text>
                 <Ionicons
                     name="chevron-down"
-                    size={16}
+                    size={18}
                     color={disabled ? colors.text.disabled : colors.text.secondary}
                 />
             </TouchableOpacity>
@@ -138,46 +139,55 @@ export const SelectField: React.FC<SelectFieldProps> = ({
 };
 
 const styles = StyleSheet.create({
+    container: {
+        marginBottom: spacingY._15,
+    },
     label: {
         fontSize: scaleFont(14),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.primary,
-        marginBottom: spacingY._7,
+        marginBottom: spacingY._8,
+        marginLeft: spacingX._4,
     },
     selectButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: colors.background.paper,
-        borderWidth: 1,
-        borderColor: colors.border?.light || '#e1e5e9',
-        borderRadius: 8,
+        backgroundColor: colors.surface.main,
+        borderWidth: 1.5,
+        borderColor: colors.border.main,
+        borderRadius: radius._12,
         paddingHorizontal: spacingX._15,
         paddingVertical: spacingY._12,
         minHeight: 48,
+        ...shadows.xs,
     },
     selectButtonError: {
         borderColor: colors.error.main,
     },
     selectButtonDisabled: {
-        backgroundColor: colors.text.disabled || '#f5f5f5',
+        backgroundColor: colors.background.default,
+        borderColor: colors.border.light,
         opacity: 0.6,
     },
     selectText: {
-        fontSize: scaleFont(14),
+        fontSize: scaleFont(15),
         color: colors.text.primary,
+        fontWeight: '500',
         flex: 1,
     },
     placeholderText: {
-        color: colors.text.secondary,
+        color: colors.text.disabled,
     },
     disabledText: {
         color: colors.text.disabled,
     },
     errorText: {
-        fontSize: scaleFont(12),
         color: colors.error.main,
-        marginTop: spacingY._5,
+        fontSize: scaleFont(12),
+        marginTop: spacingY._4,
+        marginLeft: spacingX._4,
+        fontWeight: '500',
     },
 
     // Modal styles
@@ -189,17 +199,13 @@ const styles = StyleSheet.create({
         padding: spacingX._20,
     },
     modalContainer: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 20,
+        backgroundColor: colors.background.paper,
+        borderRadius: radius._20,
         width: '100%',
         maxWidth: 400,
         maxHeight: '70%',
         overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        elevation: 10,
+        ...shadows.xl,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -208,7 +214,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacingX._20,
         paddingTop: spacingY._20,
         paddingBottom: spacingY._15,
-        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border.light,
     },
     modalTitle: {
         fontSize: scaleFont(18),
@@ -234,21 +241,21 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: spacingY._15,
         paddingHorizontal: spacingX._15,
-        borderRadius: 12,
+        borderRadius: radius._12,
         marginVertical: spacingY._5,
     },
     selectedOption: {
-        backgroundColor: 'transparent',
+        backgroundColor: colors.primary.light + '10',
     },
     optionText: {
         fontSize: scaleFont(15),
         color: colors.text.primary,
         flex: 1,
-        letterSpacing: 0.2,
+        fontWeight: '500',
     },
     selectedOptionText: {
         color: colors.primary.main,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     separator: {
         height: 0,

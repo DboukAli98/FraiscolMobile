@@ -1,4 +1,4 @@
-// components/ui/CustomButton.tsx
+// components/Button/CustomPressable.tsx
 import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { scale, scaleFont, verticalScale } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
@@ -278,7 +278,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
             try {
                 const { impactAsync, ImpactFeedbackStyle } = await import('expo-haptics');
                 impactAsync(ImpactFeedbackStyle.Light);
-            } catch (error) {
+            } catch {
                 // Haptics not available, continue without it
             }
         }
@@ -353,7 +353,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
                         style={[
                             styles.buttonText,
                             {
-                                textAlign:"center",
+                                textAlign: "center",
                                 fontSize: sizes.fontSize,
                                 color: getTextColor(),
                             },
@@ -372,7 +372,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
 };
 
 // Preset Button Components
-interface PresetButtonProps extends Omit<CustomButtonProps, 'variant' | 'color'> { }
+type PresetButtonProps = Omit<CustomButtonProps, 'variant' | 'color'>;
 
 export const PrimaryButton: React.FC<PresetButtonProps> = (props) => (
     <CustomButton variant="filled" color="primary" {...props} />
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         textAlignVertical: 'center', // Add this for Android
         includeFontPadding: false,   // Add this for Android
-        lineHeight: undefined, 
+        lineHeight: undefined,
     },
     loadingIndicator: {
         marginRight: spacingX._10,

@@ -1,11 +1,11 @@
 // app/(pages)/merchandises.tsx
 import { BottomModal } from '@/components/BottomModal/BottomModal';
-import { PrimaryButton, SecondaryButton } from '@/components/Button/CustomPressable';
+import { CustomButton } from '@/components/Button/CustomPressable';
 import { InfiniteList } from '@/components/InfiniteList/InfiniteList';
 import { MerchandiseItem } from '@/components/ListItems/MerchandiseItem';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { useMerchandiseData } from '@/hooks/useMerchandiseData';
 import useUserInfo from '@/hooks/useUserInfo';
 import { SchoolMerchandise } from '@/services/merchandisesServices';
@@ -16,12 +16,11 @@ import { ListRenderItem } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 interface MerchandiseListItem extends SchoolMerchandise {
@@ -380,12 +379,13 @@ const MerchandisesScreen = () => {
 
       {/* Action Buttons */}
       <View style={styles.filterActions}>
-        <SecondaryButton
+        <CustomButton
+          variant="outlined"
           title="Effacer"
           onPress={handleClearFilter}
           style={styles.filterButton}
         />
-        <PrimaryButton
+        <CustomButton
           title="Fermer"
           onPress={handleCloseFilter}
           style={styles.filterButton}
@@ -510,10 +510,8 @@ const MerchandisesScreen = () => {
               </View>
 
               <View style={{ flexDirection: 'row', gap: spacingX._10, marginTop: spacingY._15 }}>
-                <SecondaryButton title="Continuer" onPress={handleCloseCart} style={{ flex: 1 }} />
-                <PrimaryButton title={isPaying ? '' : 'Payer'} onPress={handlePay} style={{ flex: 1 }} disabled={isPaying}>
-                  {isPaying && <ActivityIndicator color="#fff" />}
-                </PrimaryButton>
+                <CustomButton variant="outlined" title="Continuer" onPress={handleCloseCart} style={{ flex: 1 }} />
+                <CustomButton title="Payer" onPress={handlePay} style={{ flex: 1 }} disabled={isPaying} loading={isPaying} />
               </View>
             </View>
           )}
@@ -561,20 +559,20 @@ const MerchandisesScreen = () => {
 
           {/* Action Buttons */}
           <View style={{ flexDirection: 'row', gap: spacingX._10, marginTop: spacingY._20 }}>
-            <SecondaryButton
+            <CustomButton
+              variant="outlined"
               title="Annuler"
               onPress={() => setShowPaymentConfirmModal(false)}
               style={{ flex: 1 }}
               disabled={isPaying}
             />
-            <PrimaryButton
-              title={isPaying ? '' : 'Confirmer'}
+            <CustomButton
+              title="Confirmer"
               onPress={handlePay}
               style={{ flex: 1 }}
               disabled={isPaying}
-            >
-              {isPaying && <ActivityIndicator color="#fff" />}
-            </PrimaryButton>
+              loading={isPaying}
+            />
           </View>
         </View>
       </BottomModal>
@@ -609,7 +607,7 @@ const MerchandisesScreen = () => {
             <Text style={styles.referenceValue}>{paymentReference}</Text>
           </View>
 
-          <PrimaryButton
+          <CustomButton
             title="Compris"
             onPress={() => {
               setShowPaymentSuccessModal(false);
@@ -648,7 +646,7 @@ const styles = StyleSheet.create({
   // List header
   header: {
     paddingVertical: spacingY._15,
-    paddingHorizontal: 4,
+    paddingHorizontal: spacingX._5,
   },
   subtitle: {
     fontSize: scaleFont(14),
@@ -659,7 +657,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.light,
     paddingHorizontal: spacingX._10,
     paddingVertical: spacingY._5,
-    borderRadius: 8,
+    borderRadius: radius._8,
     alignSelf: 'flex-start',
   },
   filterText: {
@@ -768,9 +766,10 @@ const styles = StyleSheet.create({
   },
   paymentDetailsSection: {
     backgroundColor: colors.background.paper,
-    borderRadius: 12,
+    borderRadius: radius._12,
     padding: spacingX._15,
     marginBottom: spacingY._15,
+    ...shadows.xs,
   },
   sectionTitle: {
     fontSize: scaleFont(14),
@@ -822,15 +821,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.background.paper,
-    borderRadius: 12,
+    borderRadius: radius._12,
     padding: spacingX._15,
     borderWidth: 2,
     borderColor: colors.error.main + '20',
+    ...shadows.xs,
   },
   airtelLogoContainer: {
     width: scale(48),
     height: scale(48),
-    borderRadius: scale(24),
+    borderRadius: radius.full,
     backgroundColor: colors.error.main + '10',
     justifyContent: 'center',
     alignItems: 'center',
@@ -879,10 +879,11 @@ const styles = StyleSheet.create({
   },
   referenceContainer: {
     backgroundColor: colors.background.paper,
-    borderRadius: 12,
+    borderRadius: radius._12,
     padding: spacingX._15,
     width: '100%',
     alignItems: 'center',
+    ...shadows.xs,
   },
   referenceLabel: {
     fontSize: scaleFont(12),

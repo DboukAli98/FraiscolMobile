@@ -2,7 +2,7 @@
 import { Card } from '@/components/Card/CardComponent';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { useParentProfile } from '@/hooks/useParentProfile';
 import useUserInfo from '@/hooks/useUserInfo';
 import useUserRole from '@/hooks/useUserRole';
@@ -606,7 +606,8 @@ const styles = StyleSheet.create({
         marginBottom: spacingY._20,
         paddingVertical: spacingY._15,
         backgroundColor: colors.background.default,
-        borderRadius: 12,
+        borderRadius: radius._12,
+        ...shadows.sm,
     },
     summaryItem: {
         alignItems: 'center',
@@ -642,7 +643,7 @@ const styles = StyleSheet.create({
     childAvatar: {
         width: scale(32),
         height: scale(32),
-        borderRadius: scale(16),
+        borderRadius: radius.full,
         backgroundColor: colors.secondary.main,
         justifyContent: 'center',
         alignItems: 'center',
@@ -678,12 +679,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: spacingY._15,
-        borderRadius: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        borderRadius: radius._12,
+        ...shadows.md,
     },
     editButtonText: {
         color: colors.text.white,

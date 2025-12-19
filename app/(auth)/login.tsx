@@ -1,10 +1,12 @@
 // app/(auth)/login.tsx
-import { PrimaryButton } from '@/components/Button/CustomPressable';
+import { CustomButton } from '@/components/Button/CustomPressable';
 import { CustomInput } from '@/components/CustomInput/CustomInput';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
+import { colors, spacingX, spacingY } from '@/constants/theme';
 import { setCredentials } from '@/redux/slices/authSlice';
 import type { AppDispatch } from '@/redux/store';
 import { useLogin } from '@/services/userServices';
+import { scaleFont } from '@/utils/stylings';
 import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -132,7 +134,7 @@ export default function LoginScreen() {
                 />
               </View>
 
-              <PrimaryButton
+              <CustomButton
                 title="Se connecter"
                 onPress={handleLogin}
                 loading={isLoading}
@@ -161,7 +163,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background.default,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -169,56 +171,43 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 48,
+    paddingHorizontal: spacingX._25,
+    paddingVertical: spacingY._40,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: spacingY._50,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1a202c',
-    marginBottom: 8,
+    fontSize: scaleFont(32),
+    fontWeight: '800',
+    color: colors.text.primary,
+    marginBottom: spacingY._10,
+    letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#718096',
+    fontSize: scaleFont(16),
+    color: colors.text.secondary,
     textAlign: 'center',
+    fontWeight: '500',
   },
   form: {
     flex: 1,
   },
   inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: '#1f2937',
+    marginBottom: spacingY._20,
   },
   footer: {
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: spacingY._30,
   },
   footerText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: scaleFont(14),
+    color: colors.text.secondary,
+    fontWeight: '500',
   },
   link: {
-    color: '#3b82f6',
-    fontWeight: '600',
+    color: colors.primary.main,
+    fontWeight: '700',
   },
 });

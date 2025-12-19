@@ -1,8 +1,7 @@
 // components/PaymentDetailModal/PaymentDetailModal.tsx
 import { BottomModal } from '@/components/BottomModal/BottomModal';
-import { PrimaryButton } from '@/components/Button/CustomPressable';
-import { Card, CardBody } from '@/components/Card/CardComponent';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { CustomButton } from '@/components/Button/CustomPressable';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { ParentInstallmentDto } from '@/services/userServices';
 import { scale, scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
@@ -115,8 +114,9 @@ export const PaymentDetailModal: React.FC<PaymentDetailModalProps> = ({
             visible={visible}
             onClose={onClose}
             title="Détails du paiement"
-            height={SCREEN_HEIGHT * 0.7}
+            height={SCREEN_HEIGHT * 0.75}
             enableDragToExpand={true}
+            enableSwipeDown={true}
         >
             <View style={styles.container}>
                 {/* Header with status */}
@@ -127,140 +127,137 @@ export const PaymentDetailModal: React.FC<PaymentDetailModalProps> = ({
                         <Text style={styles.className}>Classe: {installment.className}</Text>
                     </View>
 
-                    <View style={[styles.statusBadge, { backgroundColor: statusInfo.backgroundColor }]}>
+                    <View style={[styles.statusBadge, { backgroundColor: statusInfo.backgroundColor + '20' }]}>
                         <Ionicons
                             name={statusInfo.icon}
-                            size={scale(20)}
-                            color={statusInfo.color}
+                            size={scale(18)}
+                            color={statusInfo.backgroundColor}
                         />
-                        <Text style={[styles.statusText, { color: statusInfo.color }]}>
+                        <Text style={[styles.statusText, { color: statusInfo.backgroundColor }]}>
                             {statusInfo.text}
                         </Text>
                     </View>
                 </View>
 
                 {/* Payment Details */}
-                <Card style={styles.detailsCard} padding="_15">
-                    <CardBody>
-                        {/* Amount Section */}
-                        <View style={styles.detailSection}>
-                            <View style={styles.detailRow}>
-                                <View style={styles.detailIconContainer}>
-                                    <Ionicons name="wallet" size={scale(20)} color={colors.primary.main} />
-                                </View>
-                                <View style={styles.detailContent}>
-                                    <Text style={styles.detailLabel}>Montant à payer</Text>
-                                    <Text style={styles.detailValue}>
-                                        {formatCurrency(installment.amount)}
-                                    </Text>
-                                </View>
+                <View style={styles.detailsCard}>
+                    {/* Amount Section */}
+                    <View style={styles.detailSection}>
+                        <View style={styles.detailRow}>
+                            <View style={styles.detailIconContainer}>
+                                <Ionicons name="wallet-outline" size={scale(22)} color={colors.primary.main} />
                             </View>
-
-                            {installment.lateFee && installment.lateFee > 0 && (
-                                <View style={styles.detailRow}>
-                                    <View style={styles.detailIconContainer}>
-                                        <Ionicons name="alert-circle" size={scale(20)} color={colors.error.main} />
-                                    </View>
-                                    <View style={styles.detailContent}>
-                                        <Text style={styles.detailLabel}>Frais de retard</Text>
-                                        <Text style={[styles.detailValue, { color: colors.error.main }]}>
-                                            {formatCurrency(installment.lateFee)}
-                                        </Text>
-                                    </View>
-                                </View>
-                            )}
-
-                            {totalAmount !== installment.amount && (
-                                <View style={[styles.detailRow, styles.totalRow]}>
-                                    <View style={styles.detailIconContainer}>
-                                        <Ionicons name="calculator" size={scale(20)} color={colors.text.primary} />
-                                    </View>
-                                    <View style={styles.detailContent}>
-                                        <Text style={styles.detailLabel}>Total à payer</Text>
-                                        <Text style={[styles.detailValue, styles.totalValue]}>
-                                            {formatCurrency(totalAmount)}
-                                        </Text>
-                                    </View>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Due Date Section */}
-                        <View style={styles.detailSection}>
-                            <View style={styles.detailRow}>
-                                <View style={styles.detailIconContainer}>
-                                    <Ionicons
-                                        name="calendar"
-                                        size={scale(20)}
-                                        color={isOverdue ? colors.error.main : colors.primary.main}
-                                    />
-                                </View>
-                                <View style={styles.detailContent}>
-                                    <Text style={styles.detailLabel}>{"Date d'échéance"}</Text>
-                                    <Text style={[
-                                        styles.detailValue,
-                                        isOverdue && { color: colors.error.main }
-                                    ]}>
-                                        {formatDate(installment.dueDate)}
-                                    </Text>
-                                    {isOverdue && (
-                                        <Text style={styles.overdueNote}>
-                                            ⚠️ Paiement en retard
-                                        </Text>
-                                    )}
-                                </View>
+                            <View style={styles.detailContent}>
+                                <Text style={styles.detailLabel}>Montant à payer</Text>
+                                <Text style={styles.detailValue}>
+                                    {formatCurrency(installment.amount)}
+                                </Text>
                             </View>
                         </View>
 
-                        {/* Payment Date if paid */}
-                        {installment.isPaid && installment.paidDate && (
-                            <View style={styles.detailSection}>
-                                <View style={styles.detailRow}>
-                                    <View style={styles.detailIconContainer}>
-                                        <Ionicons name="checkmark-circle" size={scale(20)} color={colors.success.main} />
-                                    </View>
-                                    <View style={styles.detailContent}>
-                                        <Text style={styles.detailLabel}>Date de paiement</Text>
-                                        <Text style={[styles.detailValue, { color: colors.success.main }]}>
-                                            {formatDate(installment.paidDate)}
-                                        </Text>
-                                    </View>
+                        {installment.lateFee && installment.lateFee > 0 && (
+                            <View style={styles.detailRow}>
+                                <View style={styles.detailIconContainer}>
+                                    <Ionicons name="alert-circle-outline" size={scale(22)} color={colors.error.main} />
+                                </View>
+                                <View style={styles.detailContent}>
+                                    <Text style={styles.detailLabel}>Frais de retard</Text>
+                                    <Text style={[styles.detailValue, { color: colors.error.main }]}>
+                                        {formatCurrency(installment.lateFee)}
+                                    </Text>
                                 </View>
                             </View>
                         )}
 
-                        {/* Additional Info */}
-                        {/* <View style={styles.detailSection}>
-                            <View style={styles.detailRow}>
+                        {totalAmount !== installment.amount && (
+                            <View style={[styles.detailRow, styles.totalRow]}>
                                 <View style={styles.detailIconContainer}>
-                                    <Ionicons name="information-circle" size={scale(20)} color={colors.info.main} />
+                                    <Ionicons name="calculator-outline" size={scale(22)} color={colors.text.primary} />
                                 </View>
                                 <View style={styles.detailContent}>
-                                    <Text style={styles.detailLabel}>ID Versement</Text>
-                                    <Text style={styles.detailValue}>#{installment.installmentId}</Text>
+                                    <Text style={styles.detailLabel}>Total à payer</Text>
+                                    <Text style={[styles.detailValue, styles.totalValue]}>
+                                        {formatCurrency(totalAmount)}
+                                    </Text>
                                 </View>
                             </View>
-                        </View> */}
-                    </CardBody>
-                </Card>
+                        )}
+                    </View>
+
+                    {/* Due Date Section */}
+                    <View style={styles.detailSection}>
+                        <View style={styles.detailRow}>
+                            <View style={styles.detailIconContainer}>
+                                <Ionicons
+                                    name="calendar-outline"
+                                    size={scale(22)}
+                                    color={isOverdue ? colors.error.main : colors.primary.main}
+                                />
+                            </View>
+                            <View style={styles.detailContent}>
+                                <Text style={styles.detailLabel}>{"Date d'échéance"}</Text>
+                                <Text style={[
+                                    styles.detailValue,
+                                    isOverdue && { color: colors.error.main }
+                                ]}>
+                                    {formatDate(installment.dueDate)}
+                                </Text>
+                                {isOverdue && (
+                                    <Text style={styles.overdueNote}>
+                                        ⚠️ Paiement en retard
+                                    </Text>
+                                )}
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Payment Date if paid */}
+                    {installment.isPaid && installment.paidDate && (
+                        <View style={styles.detailSection}>
+                            <View style={styles.detailRow}>
+                                <View style={styles.detailIconContainer}>
+                                    <Ionicons name="checkmark-circle-outline" size={scale(22)} color={colors.success.main} />
+                                </View>
+                                <View style={styles.detailContent}>
+                                    <Text style={styles.detailLabel}>Date de paiement</Text>
+                                    <Text style={[styles.detailValue, { color: colors.success.main }]}>
+                                        {formatDate(installment.paidDate)}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+                </View>
 
                 {/* Action Buttons */}
                 <View style={styles.actions}>
                     {!installment.isPaid ? (
                         <>
-                            <PrimaryButton
+                            <CustomButton
+                                title="Annuler"
+                                onPress={onClose}
+                                variant="ghost"
+                                color="primary"
+                                style={styles.cancelButton}
+                            />
+                            <CustomButton
                                 title={isOverdue ? "Payer (En retard)" : "Payer maintenant"}
                                 onPress={handlePay}
-                                style={StyleSheet.flatten([styles.payButton, isOverdue ? styles.urgentPayButton : undefined])}
+                                variant="filled"
+                                color="primary"
+                                style={styles.payButton}
                                 leftIcon="card"
+                                shadow
                             />
                         </>
                     ) : (
-                        <PrimaryButton
+                        <CustomButton
                             title="Fermer"
                             onPress={onClose}
-                            style={StyleSheet.flatten([styles.singleButton, { backgroundColor: colors.error.main }])}
-
+                            variant="filled"
+                            color="primary"
+                            fullWidth
+                            style={styles.singleButton}
                         />
                     )}
                 </View>
@@ -272,7 +269,7 @@ export const PaymentDetailModal: React.FC<PaymentDetailModalProps> = ({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: spacingY._20,
+        paddingHorizontal: spacingX._15,
     },
 
     // Header
@@ -281,61 +278,70 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'flex-start',
         marginBottom: spacingY._20,
+        paddingVertical: spacingY._10,
     },
     childInfo: {
         flex: 1,
     },
     childName: {
-        fontSize: scaleFont(18),
-        fontWeight: 'bold',
+        fontSize: scaleFont(20),
+        fontWeight: '800',
         color: colors.text.primary,
-        marginBottom: spacingY._5,
+        marginBottom: spacingY._4,
     },
     schoolName: {
         fontSize: scaleFont(14),
         color: colors.text.secondary,
-        marginBottom: spacingY._3,
+        fontWeight: '500',
+        marginBottom: spacingY._2,
     },
     className: {
         fontSize: scaleFont(13),
-        color: colors.text.secondary,
+        color: colors.text.disabled,
+        fontWeight: '500',
     },
     statusBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: spacingX._12,
-        paddingVertical: spacingY._7,
-        borderRadius: 20,
-        gap: spacingX._5,
+        paddingVertical: spacingY._6,
+        borderRadius: radius.full,
+        gap: spacingX._6,
     },
     statusText: {
         fontSize: scaleFont(12),
-        fontWeight: '600',
+        fontWeight: '700',
     },
 
     // Details Card
     detailsCard: {
-        marginBottom: spacingY._20,
+        backgroundColor: colors.surface.main,
+        borderRadius: radius._16,
+        padding: spacingX._20,
+        marginBottom: spacingY._25,
+        ...shadows.sm,
+        borderWidth: 1,
+        borderColor: colors.border.light,
     },
     detailSection: {
         marginBottom: spacingY._15,
     },
     detailRow: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         marginBottom: spacingY._12,
     },
     totalRow: {
-        paddingTop: spacingY._10,
+        paddingTop: spacingY._15,
         borderTopWidth: 1,
-        borderTopColor: colors.border?.light || '#e1e5e9',
+        borderTopColor: colors.border.light,
         marginTop: spacingY._5,
     },
     detailIconContainer: {
-        width: scale(40),
-        height: scale(40),
-        borderRadius: scale(20),
-        backgroundColor: colors.background.paper,
+        width: scale(44),
+        height: scale(44),
+        borderRadius: radius._12,
+        backgroundColor: colors.background.default,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: spacingX._15,
@@ -346,38 +352,37 @@ const styles = StyleSheet.create({
     detailLabel: {
         fontSize: scaleFont(12),
         color: colors.text.secondary,
-        marginBottom: spacingY._3,
+        fontWeight: '500',
+        marginBottom: spacingY._2,
     },
     detailValue: {
         fontSize: scaleFont(16),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.primary,
     },
     totalValue: {
         fontSize: scaleFont(18),
-        fontWeight: 'bold',
+        fontWeight: '800',
         color: colors.primary.main,
     },
     overdueNote: {
         fontSize: scaleFont(11),
         color: colors.error.main,
-        marginTop: spacingY._3,
-        fontWeight: '500',
+        marginTop: spacingY._2,
+        fontWeight: '600',
     },
 
     // Actions
     actions: {
         flexDirection: 'row',
-        gap: spacingX._30,
+        gap: spacingX._12,
+        paddingBottom: spacingY._20,
     },
-    closeButton: {
+    cancelButton: {
         flex: 1,
     },
     payButton: {
         flex: 2,
-    },
-    urgentPayButton: {
-        // You can override the primary color here if needed
     },
     singleButton: {
         flex: 1,

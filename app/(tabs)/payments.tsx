@@ -1,12 +1,12 @@
 // app/(tabs)/payments.tsx - COMPLETELY FIXED VERSION
 import { BottomModal } from '@/components/BottomModal/BottomModal';
-import { PrimaryButton, SecondaryButton } from '@/components/Button/CustomPressable';
+import { CustomButton } from '@/components/Button/CustomPressable';
 import { Card, CardBody } from '@/components/Card/CardComponent';
 import { InfiniteList } from '@/components/InfiniteList/InfiniteList';
 import { PaymentItem } from '@/components/ListItems/PaymentItem';
 import { PaymentDetailModal } from '@/components/PaymentDetailModal/PaymentDetailModal';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, shapes, spacingX, spacingY } from '@/constants/theme';
 import { usePaymentsData } from '@/hooks/usePaymentsData';
 import useUserInfo from '@/hooks/useUserInfo';
 import { useInitiateAirtelCollection } from '@/services/paymentServices';
@@ -405,7 +405,7 @@ const PaymentsScreen: React.FC = () => {
   const EmptyIcon = useCallback(() => (
     <Ionicons
       name="card-outline"
-      size={64}
+      size={scale(64)}
       color={colors.text.disabled}
     />
   ), []);
@@ -414,7 +414,7 @@ const PaymentsScreen: React.FC = () => {
     return (
       <ScreenView safeArea backgroundColor={colors.background.default}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color={colors.error.main} />
+          <Ionicons name="alert-circle-outline" size={scale(64)} color={colors.error.main} />
           <Text style={styles.errorText}>Veuillez vous connecter pour accéder aux paiements</Text>
         </View>
       </ScreenView>
@@ -537,12 +537,13 @@ const PaymentsScreen: React.FC = () => {
 
               {/* Action Buttons */}
               <View style={styles.filterActions}>
-                <SecondaryButton
+                <CustomButton
+                  variant="outlined"
                   title="Effacer"
                   onPress={handleClearFilters}
                   style={styles.clearButton}
                 />
-                <PrimaryButton
+                <CustomButton
                   title="Appliquer"
                   onPress={handleApplyFilters}
                   style={styles.applyButton}
@@ -743,17 +744,19 @@ const PaymentsScreen: React.FC = () => {
 
             {/* Action Buttons */}
             <View style={styles.paymentConfirmActions}>
-              <SecondaryButton
+              <CustomButton
+                variant="outlined"
                 title="Annuler"
                 onPress={() => setShowPaymentConfirmModal(false)}
                 style={styles.cancelPaymentButton}
                 disabled={isProcessingPayment}
               />
-              <PrimaryButton
+              <CustomButton
                 title={isProcessingPayment ? "Traitement..." : "Confirmer"}
                 onPress={handleInitiateAirtelPayment}
                 style={styles.confirmPaymentButton}
                 disabled={isProcessingPayment}
+                loading={isProcessingPayment}
               />
             </View>
           </View>
@@ -796,7 +799,7 @@ const PaymentsScreen: React.FC = () => {
             </View>
           )}
 
-          <PrimaryButton
+          <CustomButton
             title="Compris"
             onPress={() => {
               setShowPaymentSuccessModal(false);
@@ -822,56 +825,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacingX._20,
     paddingVertical: spacingY._15,
     backgroundColor: colors.background.default,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border?.light || '#e1e5e9',
   },
   headerContent: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: scaleFont(20),
-    fontWeight: 'bold',
+    fontSize: scaleFont(24),
+    fontWeight: '800',
     color: colors.text.primary,
-    marginBottom: spacingY._3,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: scaleFont(14),
     color: colors.text.secondary,
+    marginTop: spacingY._2,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.surface.main,
     paddingHorizontal: spacingX._12,
-    paddingVertical: spacingY._7,
-    borderWidth: 1,
-    borderColor: colors.primary.main,
-    borderRadius: 8,
+    paddingVertical: spacingY._8,
+    borderRadius: radius.full,
     gap: spacingX._5,
   },
   filterButtonText: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(13),
+    fontWeight: '600',
     color: colors.primary.main,
-    fontWeight: '500',
   },
 
   // List
   listContainer: {
     paddingHorizontal: spacingX._20,
-    paddingBottom: spacingY._20,
+    paddingBottom: spacingY._30,
   },
   listHeader: {
-    paddingVertical: spacingY._20,
+    paddingTop: spacingY._10,
+    paddingBottom: spacingY._15,
   },
 
   // Summary Cards
   summaryCardsContainer: {
     flexDirection: 'row',
-    gap: spacingX._10,
+    gap: spacingX._12,
     marginBottom: spacingY._15,
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: colors.background.default,
+    marginBottom: 0,
+    borderRadius: radius._16,
+    backgroundColor: colors.background.paper,
+    ...shadows.sm,
   },
   summaryCardBody: {
     flexDirection: 'row',
@@ -879,66 +884,75 @@ const styles = StyleSheet.create({
     gap: spacingX._10,
   },
   summaryIconContainer: {
-    padding: spacingX._7,
-    backgroundColor: colors.background.paper,
-    borderRadius: 8,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: radius._10,
+    backgroundColor: colors.surface.main,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   summaryTextContainer: {
     flex: 1,
   },
   summaryLabel: {
-    fontSize: scaleFont(12),
+    fontSize: scaleFont(11),
     color: colors.text.secondary,
-    marginBottom: spacingY._3,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   summaryValue: {
-    fontSize: scaleFont(14),
-    fontWeight: 'bold',
-    color: colors.text.secondary,
+    fontSize: scaleFont(15),
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginTop: spacingY._2,
   },
 
   // Overdue Card
   overdueCard: {
-    backgroundColor: colors.error.light,
+    backgroundColor: colors.error.main,
     marginBottom: spacingY._15,
+    borderRadius: radius._16,
+    ...shadows.md,
   },
   overdueCardBody: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacingX._10,
+    gap: spacingX._12,
   },
   overdueTextContainer: {
     flex: 1,
   },
   overdueLabel: {
-    fontSize: scaleFont(14),
-    color: colors.background.default,
+    fontSize: scaleFont(13),
+    color: colors.text.white,
     fontWeight: '600',
-    marginBottom: spacingY._3,
+    opacity: 0.9,
   },
   overdueValue: {
     fontSize: scaleFont(16),
-    fontWeight: 'bold',
-    color: colors.background.default,
+    fontWeight: '800',
+    color: colors.text.white,
   },
 
   // Filter Summary
   filterSummary: {
-    backgroundColor: colors.primary.light,
+    backgroundColor: colors.surface.main,
     paddingHorizontal: spacingX._12,
-    paddingVertical: spacingY._7,
-    borderRadius: 8,
-    marginBottom: spacingY._10,
+    paddingVertical: spacingY._8,
+    borderRadius: radius._8,
+    marginBottom: spacingY._15,
   },
   filterSummaryText: {
     fontSize: scaleFont(12),
-    color: colors.background.default,
-    fontWeight: '500',
+    color: colors.text.secondary,
+    fontStyle: 'italic',
   },
 
   // Result Count
   resultCount: {
     fontSize: scaleFont(14),
+    fontWeight: '600',
     color: colors.text.secondary,
     marginBottom: spacingY._10,
   },
@@ -948,11 +962,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacingX._30,
+    padding: spacingX._30,
   },
   errorText: {
     fontSize: scaleFont(16),
-    color: colors.error.main,
+    color: colors.text.secondary,
     textAlign: 'center',
     marginTop: spacingY._15,
   },
@@ -963,8 +977,7 @@ const styles = StyleSheet.create({
     paddingTop: spacingY._10,
   },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    padding: spacingY._30,
     alignItems: 'center',
   },
   loadingText: {
@@ -976,32 +989,33 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: scaleFont(14),
-    fontWeight: '500',
+    fontWeight: '700',
     color: colors.text.primary,
-    marginBottom: spacingY._7,
+    marginBottom: spacingY._8,
+    marginLeft: spacingX._2,
   },
   pickerContainer: {
-    borderWidth: 1,
-    borderColor: colors.border?.main || '#d1d5db',
-    borderRadius: 8,
-    backgroundColor: colors.background.default,
+    backgroundColor: colors.surface.main,
+    borderRadius: radius._12,
+    overflow: 'hidden',
   },
   pickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: spacingX._15,
-    minHeight: scale(50),
+    paddingHorizontal: spacingX._15,
+    paddingVertical: spacingY._12,
   },
   pickerButtonText: {
-    fontSize: scaleFont(14),
+    fontSize: scaleFont(15),
     color: colors.text.primary,
-    flex: 1,
+    fontWeight: '500',
   },
   filterActions: {
     flexDirection: 'row',
-    gap: spacingX._10,
+    gap: spacingX._12,
     marginTop: spacingY._20,
+    paddingBottom: spacingY._10,
   },
   clearButton: {
     flex: 1,
@@ -1018,9 +1032,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacingY._15,
-    paddingHorizontal: spacingX._5,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border?.light || '#e1e5e9',
+    paddingHorizontal: spacingX._10,
+    borderBottomWidth: shapes.borderWidth.thin,
+    borderBottomColor: colors.border.light,
   },
   pickerOptionText: {
     fontSize: scaleFont(16),
@@ -1029,7 +1043,7 @@ const styles = StyleSheet.create({
   },
   pickerOptionSelected: {
     color: colors.primary.main,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   // Payment Confirmation Modal
@@ -1038,8 +1052,8 @@ const styles = StyleSheet.create({
     paddingTop: spacingY._10,
   },
   paymentDetailsSection: {
-    backgroundColor: colors.background.default,
-    borderRadius: 12,
+    backgroundColor: colors.surface.main,
+    borderRadius: radius._16,
     padding: spacingX._15,
     marginBottom: spacingY._20,
   },
@@ -1048,8 +1062,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacingY._12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border?.light || '#e1e5e9',
+    borderBottomWidth: shapes.borderWidth.thin,
+    borderBottomColor: colors.border.light,
   },
   paymentDetailLabel: {
     fontSize: scaleFont(14),
@@ -1059,7 +1073,7 @@ const styles = StyleSheet.create({
   paymentDetailValue: {
     fontSize: scaleFont(14),
     color: colors.text.primary,
-    fontWeight: '500',
+    fontWeight: '600',
     flex: 1,
     textAlign: 'right',
   },
@@ -1067,18 +1081,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
     paddingTop: spacingY._15,
     marginTop: spacingY._5,
-    borderTopWidth: 2,
-    borderTopColor: colors.border?.main || '#d1d5db',
+    borderTopWidth: shapes.borderWidth.thin,
+    borderTopColor: colors.border.main,
   },
   paymentAmountLabel: {
     fontSize: scaleFont(16),
     color: colors.text.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   paymentAmountValue: {
-    fontSize: scaleFont(18),
+    fontSize: scaleFont(20),
     color: colors.primary.main,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   paymentMethodSection: {
     marginBottom: spacingY._20,
@@ -1086,22 +1100,24 @@ const styles = StyleSheet.create({
   paymentMethodTitle: {
     fontSize: scaleFont(14),
     color: colors.text.secondary,
-    fontWeight: '500',
+    fontWeight: '600',
     marginBottom: spacingY._10,
+    marginLeft: spacingX._2,
   },
   paymentMethodCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.default,
-    borderRadius: 12,
+    backgroundColor: colors.background.paper,
+    borderRadius: radius._16,
     padding: spacingX._15,
     borderWidth: 2,
     borderColor: colors.primary.main,
+    ...shadows.sm,
   },
   airtelLogoContainer: {
     width: scale(56),
     height: scale(56),
-    borderRadius: scale(28),
+    borderRadius: radius.full,
     backgroundColor: '#FFF5F5',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1113,17 +1129,19 @@ const styles = StyleSheet.create({
   paymentMethodName: {
     fontSize: scaleFont(16),
     color: colors.text.primary,
-    fontWeight: '600',
-    marginBottom: spacingY._3,
+    fontWeight: '700',
+    marginBottom: spacingY._2,
   },
   paymentMethodPhone: {
     fontSize: scaleFont(14),
     color: colors.text.secondary,
+    fontWeight: '500',
   },
   paymentConfirmActions: {
     flexDirection: 'row',
-    gap: spacingX._10,
+    gap: spacingX._12,
     marginTop: 'auto',
+    paddingBottom: spacingY._10,
   },
   cancelPaymentButton: {
     flex: 1,
@@ -1143,10 +1161,10 @@ const styles = StyleSheet.create({
     marginBottom: spacingY._20,
   },
   successTitle: {
-    fontSize: scaleFont(22),
-    fontWeight: '700',
+    fontSize: scaleFont(24),
+    fontWeight: '800',
     color: colors.text.primary,
-    marginBottom: spacingY._15,
+    marginBottom: spacingY._10,
     textAlign: 'center',
   },
   successMessage: {
@@ -1163,15 +1181,16 @@ const styles = StyleSheet.create({
     marginBottom: spacingY._20,
     lineHeight: scaleFont(22),
     paddingHorizontal: spacingX._10,
+    fontWeight: '500',
   },
   successAmount: {
-    fontSize: scaleFont(16),
-    fontWeight: '700',
+    fontSize: scaleFont(18),
+    fontWeight: '800',
     color: colors.primary.main,
   },
   referenceContainer: {
-    backgroundColor: colors.background.default,
-    borderRadius: 12,
+    backgroundColor: colors.surface.main,
+    borderRadius: radius._12,
     padding: spacingX._15,
     marginBottom: spacingY._25,
     width: '100%',
@@ -1181,15 +1200,18 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(12),
     color: colors.text.secondary,
     marginBottom: spacingY._5,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   referenceValue: {
-    fontSize: scaleFont(16),
-    fontWeight: '700',
+    fontSize: scaleFont(18),
+    fontWeight: '800',
     color: colors.text.primary,
-    letterSpacing: 1,
+    letterSpacing: 2,
   },
   successButton: {
     width: '100%',
     marginTop: 'auto',
+    marginBottom: spacingY._10,
   },
 });

@@ -1,12 +1,12 @@
 // utils/scaling.ts
 import { Dimensions, PixelRatio } from "react-native";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+export const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-const [shortDimension, longDimension] = 
-    SCREEN_WIDTH < SCREEN_HEIGHT ? 
-    [SCREEN_WIDTH, SCREEN_HEIGHT] :
-    [SCREEN_HEIGHT, SCREEN_WIDTH];
+const [shortDimension, longDimension] =
+    SCREEN_WIDTH < SCREEN_HEIGHT ?
+        [SCREEN_WIDTH, SCREEN_HEIGHT] :
+        [SCREEN_HEIGHT, SCREEN_WIDTH];
 
 // Base dimensions (iPhone 11 Pro as reference)
 const guidelineBaseWidth = 375;
@@ -15,7 +15,7 @@ const guidelineBaseHeight = 812;
 /**
  * Scale size based on screen width (for horizontal spacing, widths, etc.)
  */
-export const scale = (size: number): number => 
+export const scale = (size: number): number =>
     Math.round(
         PixelRatio.roundToNearestPixel(
             (shortDimension / guidelineBaseWidth) * size
@@ -25,7 +25,7 @@ export const scale = (size: number): number =>
 /**
  * Scale size based on screen height (for vertical spacing, heights, etc.)
  */
-export const verticalScale = (size: number): number => 
+export const verticalScale = (size: number): number =>
     Math.round(
         PixelRatio.roundToNearestPixel(
             (longDimension / guidelineBaseHeight) * size
@@ -99,9 +99,7 @@ export function responsiveValue<T>(
     large?: T
 ): T {
     if (screenData.isSmallDevice) return small;
-    if (screenData.isLargeDevice && large) return large;
     return medium;
 }
 
-// Export screen dimensions for easy access
-export { SCREEN_HEIGHT, SCREEN_WIDTH };
+

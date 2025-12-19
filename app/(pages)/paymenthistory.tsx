@@ -4,7 +4,7 @@ import { SchoolFeeHistoryCard } from '@/components/ListItems/SchoolFeeHistoryCar
 import { MerchandiseDetailModal } from '@/components/PaymentDetailModal/MerchandiseDetailModal';
 import { SchoolFeeDetailModal } from '@/components/PaymentDetailModal/SchoolFeeDetailModal';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import useUserInfo from '@/hooks/useUserInfo';
 import { MerchandisePaymentHistoryDto, SchoolFeesPaymentHistoryDto } from '@/models/PaymentsServicesInterfaces';
 import { useGetMerchandisePaymentHistory, useGetSchoolFeesPaymentHistory } from '@/services/paymentServices';
@@ -17,11 +17,10 @@ import {
     ActivityIndicator,
     FlatList,
     RefreshControl,
-    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 type DateFilter = 'AllTime' | 'ThisMonth' | 'ThisWeek';
@@ -377,16 +376,11 @@ function PaymentHistory() {
 
             {/* Filter Chips - Only show when not initial loading or when there's data */}
             {(!isLoading || (activeTab === 'schoolFees' ? schoolFeePayments.length > 0 : merchandisePayments.length > 0)) && (
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.filtersScrollView}
-                    contentContainerStyle={styles.filtersContainer}
-                >
+                <View style={styles.filtersContainer}>
                     {renderFilterChip('AllTime', 'Tout')}
                     {renderFilterChip('ThisMonth', 'Ce mois')}
                     {renderFilterChip('ThisWeek', 'Cette semaine')}
-                </ScrollView>
+                </View>
             )}
 
             {/* List */}
@@ -484,7 +478,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: spacingX._7,
         paddingVertical: spacingY._12,
-        borderRadius: 12,
+        borderRadius: radius._12,
         backgroundColor: colors.background.paper,
         borderWidth: 1,
         borderColor: colors.border?.light || '#e1e5e9',
@@ -504,51 +498,33 @@ const styles = StyleSheet.create({
     },
 
     // Filters
-    filtersScrollView: {
-        paddingTop: spacingY._15,
-        paddingBottom: spacingY._20,
-        marginBottom: spacingY._10,
-    },
     filtersContainer: {
-        paddingHorizontal: spacingX._20,
-        gap: spacingX._12,
+        flexDirection: 'row',
+        backgroundColor: colors.background.paper,
+        borderRadius: radius._12,
+        padding: spacingX._4,
+        marginHorizontal: spacingX._20,
+        marginTop: spacingY._10,
+        marginBottom: spacingY._5,
+        borderWidth: 1,
+        borderColor: colors.border?.light || '#e1e5e9',
+        ...shadows.xs,
     },
     filterChip: {
-        paddingHorizontal: spacingX._20,
-        paddingVertical: spacingY._12,
-        height: scale(40),
+        flex: 1,
+        paddingVertical: spacingY._8,
+        borderRadius: radius._10,
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: 25,
-        backgroundColor: colors.background.paper,
-        borderWidth: 1.5,
-        borderColor: colors.border?.light || '#e1e5e9',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
     },
     filterChipActive: {
         backgroundColor: colors.primary.main,
-        borderColor: colors.primary.main,
-        shadowColor: colors.primary.main,
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 3,
+        ...shadows.sm,
     },
     filterChipText: {
-        fontSize: scaleFont(14),
+        fontSize: scaleFont(13),
         fontWeight: '600',
         color: colors.text.secondary,
-        letterSpacing: 0.3,
     },
     filterChipTextActive: {
         color: colors.text.white,

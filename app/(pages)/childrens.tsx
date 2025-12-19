@@ -4,13 +4,14 @@ import { InfiniteList } from '@/components/InfiniteList/InfiniteList';
 import { ChildItem } from '@/components/ListItems/ChildItem';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
-import { colors, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { useChildrenData } from '@/hooks/useChildrenData';
 import useUserInfo from '@/hooks/useUserInfo';
 import { useAddChildrenToSystem } from '@/services/childGradeServices';
 import { School } from '@/services/childrenServices';
 import { useGetAllSchools } from '@/services/schoolsServices';
 import { useGetParentSchools } from '@/services/userServices';
+import { scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import { ListRenderItem } from '@shopify/flash-list';
 import { router } from 'expo-router';
@@ -331,53 +332,54 @@ export default ChildrensScreen;
 const styles = StyleSheet.create({
     header: {
         paddingVertical: spacingY._20,
-        paddingHorizontal: 4,
+        paddingHorizontal: spacingX._4,
     },
     title: {
-        fontSize: 24,
+        fontSize: scaleFont(24),
         fontWeight: 'bold',
-        color: colors.text.secondary,
+        color: colors.text.primary,
         marginBottom: spacingY._5,
     },
     subtitle: {
-        fontSize: 14,
+        fontSize: scaleFont(14),
         color: colors.text.secondary,
     },
     emptyContainer: {
         alignItems: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: spacingX._20,
         width: '100%',
     },
     emptyTitle: {
-        fontSize: 20,
+        fontSize: scaleFont(20),
         fontWeight: 'bold',
         color: colors.text.primary,
-        marginTop: 20,
-        marginBottom: 10,
+        marginTop: spacingY._20,
+        marginBottom: spacingY._10,
     },
     emptySubtitle: {
-        fontSize: 14,
+        fontSize: scaleFont(14),
         color: colors.text.secondary,
         textAlign: 'center',
-        marginBottom: 20,
+        marginBottom: spacingY._20,
     },
     pendingLink: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: colors.background.paper,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 8,
+        paddingVertical: spacingY._12,
+        paddingHorizontal: spacingX._15,
+        borderRadius: radius._8,
         borderWidth: 1,
         borderColor: colors.primary.main,
-        marginTop: 10,
+        marginTop: spacingY._10,
         width: '100%',
+        ...shadows.sm,
     },
     pendingLinkText: {
-        fontSize: 14,
+        fontSize: scaleFont(14),
         color: colors.primary.main,
         fontWeight: '600',
-        marginHorizontal: 8,
+        marginHorizontal: spacingX._7,
     },
 });

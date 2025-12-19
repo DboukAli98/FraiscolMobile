@@ -3,56 +3,56 @@ import { scale, scaleFont, verticalScale } from "@/utils/stylings";
 
 export const colors = {
   primary: {
-    main: '#385e92',
-    light: '#5f7fab',
-    dark: '#2c4a72',
-    lighter:"#8fa6c7"
+    main: "#4F46E5", // Indigo 600
+    light: "#818CF8", // Indigo 400
+    dark: "#3730A3", // Indigo 800
+    lighter: "#C7D2FE", // Indigo 200
   },
   secondary: {
-    main: '#39cccc',
-    light: '#63e0e0',
-    dark: '#2aa3a3',
+    main: "#06B6D4", // Cyan 500
+    light: "#67E8F9", // Cyan 300
+    dark: "#0891B2", // Cyan 600
   },
   background: {
-    default: '#ffffff',
-    paper: '#DDDDDD',
+    default: "#F8FAFC", // Slate 50
+    paper: "#FFFFFF", // White
   },
   text: {
-    primary: '#1c1c1c',
-    secondary: '#5f7fab',
-    disabled: '#9e9e9e',
-    white: "#fff"
+    primary: "#0F172A", // Slate 900
+    secondary: "#64748B", // Slate 500
+    disabled: "#94A3B8", // Slate 400
+    white: "#FFFFFF",
   },
   success: {
-    main: '#4caf50',
-    light: '#81c784',
-    dark: '#388e3c',
+    main: "#10B981", // Emerald 500
+    light: "#6EE7B7", // Emerald 300
+    dark: "#059669", // Emerald 600
   },
   error: {
-    main: '#f44336',
-    light: '#e57373',
-    dark: '#d32f2f',
+    main: "#F43F5E", // Rose 500
+    light: "#FDA4AF", // Rose 300
+    dark: "#E11D48", // Rose 600
   },
   warning: {
-    main: '#ff9800',
-    light: '#ffb74d',
-    dark: '#f57c00',
+    main: "#F59E0B", // Amber 500
+    light: "#FCD34D", // Amber 300
+    dark: "#D97706", // Amber 600
   },
   info: {
-    main: '#39cccc',
-    light: '#63e0e0',
-    dark: '#2aa3a3',
+    main: "#3B82F6", // Blue 500
+    light: "#93C5FD", // Blue 300
+    dark: "#2563EB", // Blue 600
   },
   // Additional color utilities
   border: {
-    light: '#e1e5e9',
-    main: '#c4c9d0',
-    dark: '#a7adb7',
+    light: "#F1F5F9", // Slate 100
+    main: "#E2E8F0", // Slate 200
+    dark: "#CBD5E1", // Slate 300
   },
   surface: {
-    light: '#fafbfc',
-    main: '#f5f6f8',
-    dark: '#e8eaed',
+    light: "#F8FAFC", // Slate 50
+    main: "#F1F5F9", // Slate 100
+    dark: "#E2E8F0", // Slate 200
   },
 };
 
@@ -66,7 +66,9 @@ export const shapes = {
 };
 
 export const spacingX = {
+  _2: scale(2),
   _3: scale(3),
+  _4: scale(4),
   _5: scale(5),
   _7: scale(7),
   _10: scale(10),
@@ -84,9 +86,12 @@ export const spacingX = {
 };
 
 export const spacingY = {
+  _2: verticalScale(2),
   _3: verticalScale(3),
+  _4: verticalScale(4),
   _5: verticalScale(5),
   _7: verticalScale(7),
+  _8: verticalScale(8),
   _10: verticalScale(10),
   _12: verticalScale(12),
   _15: verticalScale(15),
@@ -104,11 +109,13 @@ export const spacingY = {
 export const radius = {
   _3: scale(3),
   _6: scale(6),
+  _8: scale(8),
   _10: scale(10),
   _12: scale(12),
   _15: scale(15),
-  _17: scale(17),
+  _16: scale(16),
   _20: scale(20),
+  _24: scale(24),
   _30: scale(30),
   full: 9999, // For fully rounded elements
 };
@@ -122,10 +129,10 @@ export const typography = {
     md: scaleFont(16),
     lg: scaleFont(18),
     xl: scaleFont(20),
-    '2xl': scaleFont(24),
-    '3xl': scaleFont(28),
-    '4xl': scaleFont(32),
-    '5xl': scaleFont(36),
+    "2xl": scaleFont(24),
+    "3xl": scaleFont(28),
+    "4xl": scaleFont(32),
+    "5xl": scaleFont(36),
   },
   lineHeight: {
     xs: verticalScale(14),
@@ -134,16 +141,16 @@ export const typography = {
     md: verticalScale(22),
     lg: verticalScale(24),
     xl: verticalScale(28),
-    '2xl': verticalScale(32),
-    '3xl': verticalScale(36),
+    "2xl": verticalScale(32),
+    "3xl": verticalScale(36),
   },
   fontWeight: {
-    light: '300',
-    normal: '400',
-    medium: '500',
-    semibold: '600',
-    bold: '700',
-    extrabold: '800',
+    light: "300",
+    normal: "400",
+    medium: "500",
+    semibold: "600",
+    bold: "700",
+    extrabold: "800",
   } as const,
 };
 
@@ -200,7 +207,7 @@ export const layout = {
   },
   card: {
     padding: spacingX._15,
-    borderRadius: radius._12,
+    borderRadius: radius._16,
     marginBottom: spacingY._15,
   },
   section: {
@@ -210,77 +217,94 @@ export const layout = {
 
 // Shadow presets
 export const shadows = {
-  sm: {
-    shadowColor: '#000',
+  none: {
+    shadowColor: "transparent",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+  xs: {
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: verticalScale(1),
+      height: 1,
     },
     shadowOpacity: 0.05,
-    shadowRadius: scale(2),
+    shadowRadius: 2,
     elevation: 1,
   },
-  md: {
-    shadowColor: '#000',
+  sm: {
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: verticalScale(2),
+      height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: scale(4),
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  md: {
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
   },
   lg: {
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: verticalScale(4),
+      height: 10,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: scale(8),
-    elevation: 5,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
   },
   xl: {
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: verticalScale(8),
+      height: 20,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: scale(12),
-    elevation: 8,
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 12,
   },
 };
 
 // Utility functions for common combinations
 export const getButtonStyle = (
-  size: 'sm' | 'md' | 'lg' | 'xl' = 'md',
-  variant: 'primary' | 'secondary' | 'outline' = 'primary'
+  size: "sm" | "md" | "lg" | "xl" = "md",
+  variant: "primary" | "secondary" | "outline" = "primary"
 ) => {
   const baseStyle = {
     height: componentSizes.button.height[size],
     paddingHorizontal: componentSizes.button.padding[size].horizontal,
     paddingVertical: componentSizes.button.padding[size].vertical,
     borderRadius: radius._12,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   };
 
   switch (variant) {
-    case 'primary':
+    case "primary":
       return {
         ...baseStyle,
         backgroundColor: colors.primary.main,
       };
-    case 'secondary':
+    case "secondary":
       return {
         ...baseStyle,
         backgroundColor: colors.secondary.main,
       };
-    case 'outline':
+    case "outline":
       return {
         ...baseStyle,
-        backgroundColor: 'transparent',
+        backgroundColor: "transparent",
         borderWidth: shapes.borderWidth.medium,
         borderColor: colors.primary.main,
       };
@@ -289,11 +313,11 @@ export const getButtonStyle = (
   }
 };
 
-type TextSize = 'xs' | 'sm' | 'base' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+type TextSize = "xs" | "sm" | "base" | "md" | "lg" | "xl" | "2xl" | "3xl";
 
 export const getTextStyle = (
-  size: TextSize = 'base',
-  weight: keyof typeof typography.fontWeight = 'normal',
+  size: TextSize = "base",
+  weight: keyof typeof typography.fontWeight = "normal",
   color: string = colors.text.primary
 ) => ({
   fontSize: typography.fontSize[size],

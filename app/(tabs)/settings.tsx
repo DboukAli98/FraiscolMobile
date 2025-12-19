@@ -1,13 +1,13 @@
 // app/(tabs)/settings.tsx
 import { PendingChildrenSummary } from '@/components/PendingChildrenSummary/PendingChildrenSummary';
 import { ScreenView } from '@/components/ScreenView/ScreenView';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { useParentProfile } from '@/hooks/useParentProfile';
 import useUserInfo from '@/hooks/useUserInfo';
 import useUserRole from '@/hooks/useUserRole';
 import { CollectingAgentDetailsData, useGetCollectingAgentDetails } from '@/services/collectingAgentServices';
 import { useLogout } from '@/services/userServices';
-import { scaleFont } from '@/utils/stylings';
+import { scale, scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -44,7 +44,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
   <TouchableOpacity style={styles.settingItem} onPress={onPress}>
     <View style={styles.settingLeft}>
       <View style={[styles.iconContainer, { backgroundColor: `${iconColor}20` }]}>
-        <Ionicons name={icon} size={20} color={iconColor} />
+        <Ionicons name={icon} size={scale(20)} color={iconColor} />
       </View>
       <View style={styles.settingText}>
         <Text style={styles.settingTitle}>{title}</Text>
@@ -54,7 +54,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
     <View style={styles.settingRight}>
       {rightComponent}
       {showArrow && !rightComponent && (
-        <Ionicons name="chevron-forward" size={16} color={colors.text.secondary} />
+        <Ionicons name="chevron-forward" size={scale(16)} color={colors.text.secondary} />
       )}
     </View>
   </TouchableOpacity>
@@ -79,9 +79,8 @@ const SettingsScreen = () => {
 
   // Settings state
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [autoBackup, setAutoBackup] = useState(true);
+
 
   // Use ref to track if data has been loaded to prevent infinite loops
   const hasLoadedAgentDataRef = React.useRef(false);
@@ -139,22 +138,11 @@ const SettingsScreen = () => {
               } else {
                 Alert.alert("Erreur", error || "Une erreur s'est produite lors de la déconnexion.");
               }
-            } catch (error) {
+            } catch {
               Alert.alert("Erreur", "Une erreur s'est produite lors de la déconnexion.");
             }
           }
         }
-      ]
-    );
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Supprimer le compte',
-      'Cette action est irréversible. Toutes vos données seront supprimées.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Supprimer', style: 'destructive', onPress: () => console.log('Delete account') }
       ]
     );
   };
@@ -407,53 +395,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacingY._30,
     paddingHorizontal: spacingX._20,
-    backgroundColor: colors.background.paper,
-    marginBottom: spacingY._20,
+    backgroundColor: colors.background.default,
+    marginBottom: spacingY._10,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: scale(80),
+    height: scale(80),
+    borderRadius: radius.full,
     backgroundColor: colors.primary.main,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacingY._15,
+    ...shadows.md,
   },
   avatarText: {
     fontSize: scaleFont(28),
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text.white,
   },
   profileName: {
-    fontSize: scaleFont(20),
-    fontWeight: 'bold',
+    fontSize: scaleFont(22),
+    fontWeight: '800',
     color: colors.text.primary,
     marginBottom: spacingY._5,
+    letterSpacing: -0.5,
   },
   profileEmail: {
     fontSize: scaleFont(14),
     color: colors.text.secondary,
     marginBottom: spacingY._15,
+    fontWeight: '500',
   },
   editProfileButton: {
-    paddingHorizontal: spacingX._20,
-    paddingVertical: spacingY._7,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.primary.main,
+    paddingHorizontal: spacingX._25,
+    paddingVertical: spacingY._8,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface.main,
   },
   editProfileText: {
     color: colors.primary.main,
     fontSize: scaleFont(14),
-    fontWeight: '500',
+    fontWeight: '600',
   },
   sectionHeader: {
-    fontSize: scaleFont(16),
-    fontWeight: '600',
-    color: colors.text.primary,
+    fontSize: scaleFont(12),
+    fontWeight: '700',
+    color: colors.text.secondary,
     paddingHorizontal: spacingX._20,
-    paddingVertical: spacingY._15,
-    backgroundColor: '#f8f9fa',
+    paddingVertical: spacingY._12,
+    backgroundColor: colors.surface.light,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   settingItem: {
     flexDirection: 'row',
@@ -462,8 +454,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacingX._20,
     paddingVertical: spacingY._15,
     backgroundColor: colors.background.default,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border?.light || '#e1e5e9',
   },
   settingLeft: {
     flexDirection: 'row',
@@ -471,9 +461,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: radius._10,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacingX._15,
@@ -483,27 +473,29 @@ const styles = StyleSheet.create({
   },
   settingTitle: {
     fontSize: scaleFont(16),
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.text.primary,
-    marginBottom: 2,
+    marginBottom: spacingY._2,
   },
   settingSubtitle: {
     fontSize: scaleFont(13),
     color: colors.text.secondary,
+    fontWeight: '400',
   },
   settingRight: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   footer: {
-    padding: spacingY._30,
+    padding: spacingY._40,
     alignItems: 'center',
   },
   footerText: {
     fontSize: scaleFont(12),
-    color: colors.text.secondary,
+    color: colors.text.disabled,
     textAlign: 'center',
     lineHeight: scaleFont(18),
+    fontWeight: '500',
   },
 });
 

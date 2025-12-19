@@ -3,10 +3,10 @@ import { BottomModal } from '@/components/BottomModal/BottomModal';
 import { CustomButton } from '@/components/Button/CustomPressable';
 import { CustomInput } from '@/components/CustomInput/CustomInput';
 import { SelectField } from '@/components/SelectField/SelectField';
-import { colors, spacingX, spacingY } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import useUserInfo from '@/hooks/useUserInfo';
 import { School } from '@/services/childrenServices';
-import { scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
+import { scale, scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
@@ -202,25 +202,22 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
             visible={visible}
             onClose={onClose}
             title="Ajouter un enfant"
-            subtitle="Remplissez les informations de l'enfant"
+            subtitle="Remplissez les informations ci-dessous"
             enableDragToExpand={true}
-            enableSwipeDown={false} // Disable swipe down to prevent interference
-            height={SCREEN_HEIGHT * 0.95}
-
+            enableSwipeDown={true}
+            height={SCREEN_HEIGHT * 0.85}
         >
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
             >
                 <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
-                    // These props help prevent the modal from intercepting scroll gestures
                     nestedScrollEnabled={true}
-                    scrollEnabled={true}
-                    bounces={false} // Disable bounce to prevent interference with modal gestures
                 >
                     <View style={styles.formContainer}>
                         {/* First Name */}
@@ -228,7 +225,7 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
                             label="Prénom *"
                             value={firstName}
                             onChangeText={setFirstName}
-                            placeholder="Entrez le prénom"
+                            placeholder="Ex: Jean"
                             error={errors.firstName}
                             leftIcon="person-outline"
                             autoCapitalize="words"
@@ -240,7 +237,7 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
                             label="Nom de famille *"
                             value={lastName}
                             onChangeText={setLastName}
-                            placeholder="Entrez le nom de famille"
+                            placeholder="Ex: Dupont"
                             error={errors.lastName}
                             leftIcon="person-outline"
                             autoCapitalize="words"
@@ -252,7 +249,7 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
                             label="Nom du père"
                             value={fatherName}
                             onChangeText={setFatherName}
-                            placeholder="Entrez le nom du père (optionnel)"
+                            placeholder="Nom complet du père (optionnel)"
                             leftIcon="person-outline"
                             autoCapitalize="words"
                             returnKeyType="next"
@@ -268,11 +265,12 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
                                     errors.dateOfBirth && styles.datePickerButtonError
                                 ]}
                                 onPress={handleDatePickerPress}
+                                activeOpacity={0.7}
                             >
                                 <Ionicons
                                     name="calendar-outline"
-                                    size={20}
-                                    color={colors.text.secondary}
+                                    size={22}
+                                    color={errors.dateOfBirth ? colors.error.main : colors.primary.main}
                                     style={styles.datePickerIcon}
                                 />
                                 <Text style={[
@@ -283,8 +281,8 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
                                 </Text>
                                 <Ionicons
                                     name="chevron-down"
-                                    size={16}
-                                    color={colors.text.secondary}
+                                    size={18}
+                                    color={colors.text.disabled}
                                 />
                             </TouchableOpacity>
 
@@ -301,6 +299,7 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
                                     maximumDate={getMaxDate()}
                                     minimumDate={getMinDate()}
                                     style={Platform.OS === 'ios' ? styles.iosDatePicker : undefined}
+                                    locale="fr-FR"
                                 />
                             )}
 
@@ -310,7 +309,7 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
                                         style={styles.datePickerActionButton}
                                         onPress={() => setShowDatePicker(false)}
                                     >
-                                        <Text style={styles.datePickerActionText}>Terminé</Text>
+                                        <Text style={styles.datePickerActionText}>Confirmer</Text>
                                     </TouchableOpacity>
                                 </View>
                             )}
@@ -332,7 +331,7 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
                                     options={schoolOptions}
                                     selectedValue={selectedSchoolId}
                                     onSelect={(value) => setSelectedSchoolId(value as number)}
-                                    placeholder="Sélectionnez une école"
+                                    placeholder="Choisir l'établissement"
                                     error={errors.schoolId}
                                 />
                             )}
@@ -340,9 +339,9 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
 
                         {/* Help Text */}
                         <View style={styles.helpTextContainer}>
-                            <Ionicons name="information-circle-outline" size={16} color={colors.text.secondary} />
+                            <Ionicons name="information-circle" size={20} color={colors.info.main} />
                             <Text style={styles.helpText}>
-                                {"Les champs marqués d'un * sont obligatoires"}
+                                {"Veuillez vous assurer que les informations correspondent aux documents officiels de l'enfant."}
                             </Text>
                         </View>
                     </View>
@@ -353,23 +352,22 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
                     <CustomButton
                         title="Annuler"
                         onPress={onClose}
-                        variant="filled"
-                        color="error"
-                        fullWidth={false}
+                        variant="ghost"
+                        color="primary"
                         style={styles.cancelButton}
                         disabled={isSubmitting}
                     />
 
                     <CustomButton
-                        title={isSubmitting ? "Ajout en cours..." : "Ajouter l'enfant"}
+                        title={isSubmitting ? "Ajout..." : "Ajouter l'enfant"}
                         onPress={handleSubmit}
                         variant="filled"
                         color="primary"
-                        fullWidth={false}
                         style={styles.submitButton}
                         disabled={isSubmitting || schools.length === 0}
                         loading={isSubmitting}
-                        leftIcon={isSubmitting ? undefined : "person-add-outline"}
+                        leftIcon={isSubmitting ? undefined : "person-add"}
+                        shadow
                     />
                 </View>
             </KeyboardAvoidingView>
@@ -389,7 +387,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: spacingY._10,
+        paddingBottom: spacingY._20,
     },
     formContainer: {
         paddingBottom: spacingY._30,
@@ -399,46 +397,53 @@ const styles = StyleSheet.create({
     },
     fieldLabel: {
         fontSize: scaleFont(14),
-        fontWeight: '600',
+        fontWeight: '700',
         color: colors.text.primary,
-        marginBottom: spacingY._7,
+        marginBottom: spacingY._8,
+        marginLeft: spacingX._2,
     },
     noSchoolsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: spacingX._20,
-        backgroundColor: colors.background.default,
-        borderRadius: 8,
+        backgroundColor: colors.surface.main,
+        borderRadius: radius._12,
         borderWidth: 1,
-        borderColor: colors.border?.light || '#e1e5e9',
+        borderColor: colors.border.main,
     },
     noSchoolsText: {
         fontSize: scaleFont(14),
-        color: colors.text.disabled,
+        color: colors.text.secondary,
         marginLeft: spacingX._10,
+        fontWeight: '500',
     },
     helpTextContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: spacingX._15,
-        paddingVertical: spacingY._10,
-        backgroundColor: colors.info.light + '20',
-        borderRadius: 8,
+        paddingVertical: spacingY._12,
+        backgroundColor: `${colors.info.main}10`,
+        borderRadius: radius._12,
         marginTop: spacingY._10,
+        borderWidth: 1,
+        borderColor: `${colors.info.main}20`,
     },
     helpText: {
-        fontSize: scaleFont(12),
-        color: colors.text.secondary,
-        marginLeft: spacingX._7,
+        fontSize: scaleFont(13),
+        color: colors.info.dark,
+        marginLeft: spacingX._10,
         flex: 1,
+        fontWeight: '500',
     },
     actionContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingTop: spacingY._20,
+        paddingBottom: Platform.OS === 'ios' ? spacingY._10 : spacingY._20,
         borderTopWidth: 1,
-        borderTopColor: colors.border?.light || '#e1e5e9',
-        gap: spacingX._15,
+        borderTopColor: colors.border.light,
+        gap: spacingX._12,
+        backgroundColor: colors.background.paper,
     },
     cancelButton: {
         flex: 1,
@@ -451,35 +456,42 @@ const styles = StyleSheet.create({
     datePickerButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.background.paper,
-        borderWidth: 1,
-        borderColor: colors.border?.light || '#e1e5e9',
-        borderRadius: 8,
+        backgroundColor: colors.surface.main,
+        borderWidth: 1.5,
+        borderColor: 'transparent',
+        borderRadius: radius._12,
         paddingHorizontal: spacingX._15,
         paddingVertical: spacingY._12,
-        minHeight: 48,
+        minHeight: scale(52),
     },
     datePickerButtonError: {
         borderColor: colors.error.main,
+        backgroundColor: `${colors.error.main}05`,
     },
     datePickerIcon: {
-        marginRight: spacingX._10,
+        marginRight: spacingX._12,
     },
     datePickerText: {
         flex: 1,
-        fontSize: scaleFont(14),
+        fontSize: scaleFont(15),
         color: colors.text.primary,
+        fontWeight: '500',
     },
     datePickerPlaceholder: {
-        color: colors.text.secondary,
+        color: colors.text.disabled,
+        fontWeight: '400',
     },
     errorText: {
         fontSize: scaleFont(12),
         color: colors.error.main,
         marginTop: spacingY._5,
+        marginLeft: spacingX._4,
+        fontWeight: '500',
     },
     iosDatePicker: {
         marginTop: spacingY._10,
+        backgroundColor: colors.background.paper,
+        borderRadius: radius._12,
     },
     iosDatePickerActions: {
         flexDirection: 'row',
@@ -488,13 +500,14 @@ const styles = StyleSheet.create({
     },
     datePickerActionButton: {
         paddingHorizontal: spacingX._20,
-        paddingVertical: spacingY._7,
+        paddingVertical: spacingY._8,
         backgroundColor: colors.primary.main,
-        borderRadius: 6,
+        borderRadius: radius._8,
+        ...shadows.sm,
     },
     datePickerActionText: {
         color: colors.text.white,
         fontSize: scaleFont(14),
-        fontWeight: '600',
+        fontWeight: '700',
     },
 });
