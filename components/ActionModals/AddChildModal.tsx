@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: colors.border.light,
         gap: spacingX._12,
-        backgroundColor: colors.background.paper,
+        backgroundColor: colors.background.default,
     },
     cancelButton: {
         flex: 1,

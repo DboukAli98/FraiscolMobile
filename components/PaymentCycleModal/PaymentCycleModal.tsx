@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     },
     cycleItemSelected: {
         borderColor: colors.primary.main,
-        backgroundColor: colors.primary.light + '08',
+        backgroundColor: colors.background.paper,
         ...shadows.md,
     },
     cycleHeader: {
@@ -356,6 +356,6 @@ const styles = StyleSheet.create({
         paddingVertical: spacingY._20,
         borderTopWidth: 1,
         borderTopColor: colors.border.light,
-        backgroundColor: colors.background.paper,
+        backgroundColor: colors.background.default,
     },
 });
