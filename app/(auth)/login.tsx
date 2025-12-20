@@ -10,7 +10,6 @@ import { scaleFont } from '@/utils/stylings';
 import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -26,22 +25,29 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [civilId, setCivilId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ mobileNumber?: string; password?: string; general?: string }>({});
   // Using CustomInput password variant (built-in visibility toggle)
 
   const dispatch = useDispatch<AppDispatch>();
   const authenticate = useLogin();
 
   const handleLogin = async () => {
+    const newErrors: { mobileNumber?: string; password?: string } = {};
+
     if (!mobileNumber.trim()) {
-      Alert.alert('Error', 'Please enter your mobile number');
-      return;
+      newErrors.mobileNumber = 'Le numéro de portable est obligatoire';
     }
 
     if (!password.trim()) {
-      Alert.alert('Error', 'Please enter your password');
+      newErrors.password = 'Le mot de passe est obligatoire';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
+    setErrors({});
     setIsLoading(true);
 
     try {
@@ -64,13 +70,10 @@ export default function LoginScreen() {
         router.replace('/(tabs)');
       } else {
         console.error('Login failed:', error);
-        Alert.alert(
-          'Login Failed',
-          error?.message || 'Invalid credentials. Please try again.'
-        );
+        setErrors({ general: error?.message || 'Identifiants invalides. Veuillez réessayer.' });
       }
     } catch {
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      setErrors({ general: 'Une erreur inattendue s\'est produite. Veuillez réessayer.' });
     } finally {
       setIsLoading(false);
     }
@@ -90,11 +93,20 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.form}>
+              {errors.general && (
+                <View style={styles.generalErrorContainer}>
+                  <Text style={styles.generalErrorText}>{errors.general}</Text>
+                </View>
+              )}
+
               <View style={styles.inputGroup}>
                 <CustomInput
                   label="Code du pays"
                   value={countryCode}
-                  onChangeText={setCountryCode}
+                  onChangeText={(text) => {
+                    setCountryCode(text);
+                    if (errors.general) setErrors({});
+                  }}
                   placeholder="+965"
                   inputType="phone"
                   leftIcon="flag-outline"
@@ -105,10 +117,14 @@ export default function LoginScreen() {
                 <CustomInput
                   label="Numéro de portable"
                   value={mobileNumber}
-                  onChangeText={setMobileNumber}
+                  onChangeText={(text) => {
+                    setMobileNumber(text);
+                    setErrors(prev => ({ ...prev, mobileNumber: undefined, general: undefined }));
+                  }}
                   placeholder="Enter your mobile number"
                   inputType="phone"
                   leftIcon="call-outline"
+                  error={errors.mobileNumber}
                 />
               </View>
 
@@ -127,10 +143,14 @@ export default function LoginScreen() {
                 <CustomInput
                   label="Mot de passe"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    setErrors(prev => ({ ...prev, password: undefined, general: undefined }));
+                  }}
                   placeholder="Enter your password"
                   inputType="password"
                   leftIcon="lock-closed-outline"
+                  error={errors.password}
                 />
               </View>
 
@@ -196,6 +216,20 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: spacingY._20,
+  },
+  generalErrorContainer: {
+    backgroundColor: `${colors.error.main}15`,
+    padding: spacingX._15,
+    borderRadius: 12,
+    marginBottom: spacingY._20,
+    borderWidth: 1,
+    borderColor: `${colors.error.main}30`,
+  },
+  generalErrorText: {
+    color: colors.error.main,
+    fontSize: scaleFont(14),
+    textAlign: 'center',
+    fontWeight: '600',
   },
   footer: {
     alignItems: 'center',
