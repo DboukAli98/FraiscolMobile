@@ -56,11 +56,11 @@ export default function RegisterScreen() {
     }
 
     const phone = (formData.mobileNumber || '').trim();
-    const phoneRegex = /^0(5|6|7)\d{7}$/; // ex: 056601234
+    const phoneRegex = /^0(4|5|6|7)\d{7}$/; // ex: 046601234, 056601234
     if (!phone) {
       nextErrors.mobileNumber = 'Le numéro de mobile est requis';
     } else if (!phoneRegex.test(phone)) {
-      nextErrors.mobileNumber = "Numéro invalide pour le Congo. Exemple: 056601234";
+      nextErrors.mobileNumber = "Numéro invalide pour le Congo. Exemple: 046601234 ou 056601234";
     }
 
     if (formData.email && formData.email.trim()) {
