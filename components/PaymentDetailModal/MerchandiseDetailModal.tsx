@@ -16,6 +16,9 @@ export interface MerchandiseDetailModalProps {
     visible: boolean;
     onClose: () => void;
     payment: MerchandisePaymentHistoryDto | null;
+    onSharePDF?: (payment: MerchandisePaymentHistoryDto) => void;
+    onDownloadPDF?: (payment: MerchandisePaymentHistoryDto) => void;
+    /** @deprecated Use onSharePDF instead */
     onExportPDF?: (payment: MerchandisePaymentHistoryDto) => void;
 }
 
@@ -23,9 +26,24 @@ export const MerchandiseDetailModal: React.FC<MerchandiseDetailModalProps> = ({
     visible,
     onClose,
     payment,
+    onSharePDF,
+    onDownloadPDF,
     onExportPDF,
 }) => {
     if (!payment) return null;
+
+    const handleSharePDF = () => {
+        // Support legacy onExportPDF prop
+        if (onSharePDF) {
+            onSharePDF(payment);
+        } else if (onExportPDF) {
+            onExportPDF(payment);
+        }
+    };
+
+    const handleDownloadPDF = () => {
+        onDownloadPDF?.(payment);
+    };
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('fr-FR', {
@@ -60,10 +78,6 @@ export const MerchandiseDetailModal: React.FC<MerchandiseDetailModalProps> = ({
         } catch {
             return '';
         }
-    };
-
-    const handleExportPDF = () => {
-        onExportPDF?.(payment);
     };
 
     return (
@@ -228,17 +242,29 @@ export const MerchandiseDetailModal: React.FC<MerchandiseDetailModalProps> = ({
                         </View>
                     )}
 
-                    {/* Export Button */}
+                    {/* PDF Actions */}
                     <View style={styles.actionSection}>
-                        <CustomButton
-                            title="Exporter en PDF"
-                            onPress={handleExportPDF}
-                            variant="filled"
-                            color="primary"
-                            leftIcon="document-text"
-                            fullWidth
-                            shadow
-                        />
+                        <View style={styles.actionButtonsRow}>
+                            {onDownloadPDF && (
+                                <CustomButton
+                                    title="Télécharger"
+                                    onPress={handleDownloadPDF}
+                                    variant="outlined"
+                                    color="primary"
+                                    leftIcon="download-outline"
+                                    style={styles.actionButton}
+                                />
+                            )}
+                            <CustomButton
+                                title="Partager"
+                                onPress={handleSharePDF}
+                                variant="filled"
+                                color="primary"
+                                leftIcon="share-outline"
+                                style={styles.actionButton}
+                                shadow
+                            />
+                        </View>
                     </View>
                 </View>
             </ScrollView>
@@ -423,5 +449,12 @@ const styles = StyleSheet.create({
     },
     actionSection: {
         marginTop: spacingY._10,
+    },
+    actionButtonsRow: {
+        flexDirection: 'row',
+        gap: spacingX._12,
+    },
+    actionButton: {
+        flex: 1,
     },
 });

@@ -666,6 +666,77 @@ export const sharePDF = async (fileUri: string): Promise<void> => {
     }
 };
 
+// Download PDF to device storage
+export const downloadPDF = async (fileUri: string, fileName: string): Promise<boolean> => {
+    try {
+        if (Platform.OS === 'android') {
+            // Request permissions using SAF (Storage Access Framework) approach
+            const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+
+            if (!permissions.granted) {
+                Alert.alert(
+                    'Permission requise',
+                    'Veuillez autoriser l\'accès au stockage pour télécharger le fichier.',
+                    [{ text: 'OK' }]
+                );
+                return false;
+            }
+
+            // Read the file content as base64
+            const fileContent = await FileSystem.readAsStringAsync(fileUri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+
+            // Create file in the selected directory
+            const newFileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                permissions.directoryUri,
+                fileName,
+                'application/pdf'
+            );
+
+            // Write content to the new file
+            await FileSystem.writeAsStringAsync(newFileUri, fileContent, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+
+            Alert.alert(
+                'Téléchargement réussi',
+                `Le reçu "${fileName}" a été enregistré dans le dossier sélectionné.`,
+                [{ text: 'OK' }]
+            );
+            console.log('✅ PDF downloaded successfully to:', newFileUri);
+            return true;
+        } else {
+            // iOS: Use sharing to save to Files app
+            const isAvailable = await Sharing.isAvailableAsync();
+            if (isAvailable) {
+                await Sharing.shareAsync(fileUri, {
+                    mimeType: 'application/pdf',
+                    dialogTitle: 'Enregistrer le reçu',
+                    UTI: 'com.adobe.pdf',
+                });
+                console.log('✅ PDF save dialog opened on iOS');
+                return true;
+            } else {
+                Alert.alert(
+                    'Erreur',
+                    'L\'enregistrement n\'est pas disponible sur cet appareil.',
+                    [{ text: 'OK' }]
+                );
+                return false;
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error downloading PDF:', error);
+        Alert.alert(
+            'Erreur',
+            'Impossible de télécharger le fichier. Veuillez réessayer.',
+            [{ text: 'OK' }]
+        );
+        return false;
+    }
+};
+
 // Generate Merchandise PDF and return file URI
 export const generateMerchandisePDF = async (payment: MerchandisePaymentHistoryDto): Promise<{ uri: string; fileName: string }> => {
     const html = generateMerchandiseHTML(payment);

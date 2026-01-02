@@ -8,7 +8,7 @@ import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import useUserInfo from '@/hooks/useUserInfo';
 import { MerchandisePaymentHistoryDto, SchoolFeesPaymentHistoryDto } from '@/models/PaymentsServicesInterfaces';
 import { useGetMerchandisePaymentHistory, useGetSchoolFeesPaymentHistory } from '@/services/paymentServices';
-import { generateMerchandisePDF, generateSchoolFeePDF, sharePDF } from '@/utils/pdfExport';
+import { downloadPDF, generateMerchandisePDF, generateSchoolFeePDF, sharePDF } from '@/utils/pdfExport';
 import { scale, scaleFont } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -209,22 +209,41 @@ function PaymentHistory() {
         setShowMerchandiseModal(true);
     }, []);
 
-    // Handle PDF export - directly share
-    const handleExportSchoolFeePDF = useCallback(async (payment: SchoolFeesPaymentHistoryDto) => {
+    // Handle PDF share
+    const handleShareSchoolFeePDF = useCallback(async (payment: SchoolFeesPaymentHistoryDto) => {
         try {
             const { uri } = await generateSchoolFeePDF(payment);
             await sharePDF(uri);
         } catch (error) {
-            console.error('Error generating PDF:', error);
+            console.error('Error sharing PDF:', error);
         }
     }, []);
 
-    const handleExportMerchandisePDF = useCallback(async (payment: MerchandisePaymentHistoryDto) => {
+    const handleShareMerchandisePDF = useCallback(async (payment: MerchandisePaymentHistoryDto) => {
         try {
             const { uri } = await generateMerchandisePDF(payment);
             await sharePDF(uri);
         } catch (error) {
-            console.error('Error generating PDF:', error);
+            console.error('Error sharing PDF:', error);
+        }
+    }, []);
+
+    // Handle PDF download
+    const handleDownloadSchoolFeePDF = useCallback(async (payment: SchoolFeesPaymentHistoryDto) => {
+        try {
+            const { uri, fileName } = await generateSchoolFeePDF(payment);
+            await downloadPDF(uri, fileName);
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+        }
+    }, []);
+
+    const handleDownloadMerchandisePDF = useCallback(async (payment: MerchandisePaymentHistoryDto) => {
+        try {
+            const { uri, fileName } = await generateMerchandisePDF(payment);
+            await downloadPDF(uri, fileName);
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
         }
     }, []);
 
@@ -418,7 +437,8 @@ function PaymentHistory() {
                     setSelectedSchoolFee(null);
                 }}
                 payment={selectedSchoolFee}
-                onExportPDF={handleExportSchoolFeePDF}
+                onSharePDF={handleShareSchoolFeePDF}
+                onDownloadPDF={handleDownloadSchoolFeePDF}
             />
 
             {/* Merchandise Detail Modal */}
@@ -429,7 +449,8 @@ function PaymentHistory() {
                     setSelectedMerchandise(null);
                 }}
                 payment={selectedMerchandise}
-                onExportPDF={handleExportMerchandisePDF}
+                onSharePDF={handleShareMerchandisePDF}
+                onDownloadPDF={handleDownloadMerchandisePDF}
             />
         </ScreenView>
     );

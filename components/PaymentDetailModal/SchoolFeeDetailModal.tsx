@@ -16,6 +16,9 @@ export interface SchoolFeeDetailModalProps {
     visible: boolean;
     onClose: () => void;
     payment: SchoolFeesPaymentHistoryDto | null;
+    onSharePDF?: (payment: SchoolFeesPaymentHistoryDto) => void;
+    onDownloadPDF?: (payment: SchoolFeesPaymentHistoryDto) => void;
+    /** @deprecated Use onSharePDF instead */
     onExportPDF?: (payment: SchoolFeesPaymentHistoryDto) => void;
 }
 
@@ -23,9 +26,24 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
     visible,
     onClose,
     payment,
+    onSharePDF,
+    onDownloadPDF,
     onExportPDF,
 }) => {
     if (!payment) return null;
+
+    const handleSharePDF = () => {
+        // Support legacy onExportPDF prop
+        if (onSharePDF) {
+            onSharePDF(payment);
+        } else if (onExportPDF) {
+            onExportPDF(payment);
+        }
+    };
+
+    const handleDownloadPDF = () => {
+        onDownloadPDF?.(payment);
+    };
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('fr-FR', {
@@ -60,10 +78,6 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
         } catch {
             return '';
         }
-    };
-
-    const handleExportPDF = () => {
-        onExportPDF?.(payment);
     };
 
     return (
@@ -257,17 +271,29 @@ export const SchoolFeeDetailModal: React.FC<SchoolFeeDetailModalProps> = ({
                         </View>
                     )}
 
-                    {/* Export Button */}
+                    {/* PDF Actions */}
                     <View style={styles.actionSection}>
-                        <CustomButton
-                            title="Exporter en PDF"
-                            onPress={handleExportPDF}
-                            variant="filled"
-                            color="primary"
-                            leftIcon="document-text"
-                            fullWidth
-                            shadow
-                        />
+                        <View style={styles.actionButtonsRow}>
+                            {onDownloadPDF && (
+                                <CustomButton
+                                    title="Télécharger"
+                                    onPress={handleDownloadPDF}
+                                    variant="outlined"
+                                    color="primary"
+                                    leftIcon="download-outline"
+                                    style={styles.actionButton}
+                                />
+                            )}
+                            <CustomButton
+                                title="Partager"
+                                onPress={handleSharePDF}
+                                variant="filled"
+                                color="primary"
+                                leftIcon="share-outline"
+                                style={styles.actionButton}
+                                shadow
+                            />
+                        </View>
                     </View>
                 </View>
             </ScrollView>
@@ -409,5 +435,12 @@ const styles = StyleSheet.create({
     },
     actionSection: {
         marginTop: spacingY._10,
+    },
+    actionButtonsRow: {
+        flexDirection: 'row',
+        gap: spacingX._12,
+    },
+    actionButton: {
+        flex: 1,
     },
 });

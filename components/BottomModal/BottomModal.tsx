@@ -285,11 +285,10 @@ export const BottomModal: React.FC<BottomModalProps> = ({
                         },
                         modalStyle,
                     ]}
-                    {...panResponder.panHandlers}
                 >
-                    {/* Drag Handle */}
+                    {/* Drag Handle - Pan handlers only on this area */}
                     {showDragHandle && (
-                        <View style={styles.dragHandleContainer}>
+                        <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
                             <View style={[
                                 styles.dragHandle,
                                 isDragging && styles.dragHandleActive,
@@ -303,9 +302,9 @@ export const BottomModal: React.FC<BottomModalProps> = ({
                         </View>
                     )}
 
-                    {/* Header */}
+                    {/* Header - Pan handlers on header area for swipe gestures */}
                     {showHeader && (title || subtitle || showCloseButton) && (
-                        <View style={[styles.header, headerStyle]}>
+                        <View style={[styles.header, headerStyle]} {...panResponder.panHandlers}>
                             <View style={styles.headerContent}>
                                 {title && (
                                     <Text style={[styles.title, titleStyle]}>{title}</Text>
@@ -510,7 +509,10 @@ const styles = StyleSheet.create({
     },
     dragHandleContainer: {
         alignItems: 'center',
-        paddingVertical: spacingY._10,
+        paddingVertical: spacingY._12,
+        paddingHorizontal: spacingX._20,
+        // Ensure adequate touch target area for swipe gestures
+        minHeight: verticalScale(32),
     },
     dragHandle: {
         width: scale(40),
