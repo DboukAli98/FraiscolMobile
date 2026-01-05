@@ -1,12 +1,12 @@
 // hooks/usePaymentsData.ts
 
-import useUserInfo from '@/hooks/useUserInfo';
+import useUserInfo from "@/hooks/useUserInfo";
 import {
   GetParentInstallmentsParams,
   ParentInstallmentDto,
-  useGetParentInstallments
-} from '@/services/userServices';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+  useGetParentInstallments,
+} from "@/services/userServices";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface UsePaymentsDataProps {
   pageSize?: number;
@@ -20,33 +20,33 @@ export interface UsePaymentsDataProps {
 export interface UsePaymentsDataReturn {
   // Data
   installments: ParentInstallmentDto[];
-  
+
   // Loading states
   isLoading: boolean;
   isLoadingMore: boolean;
   isRefreshing: boolean;
-  
+
   // Pagination
   hasNextPage: boolean;
   currentPage: number;
   totalCount: number;
-  
+
   // Filters
   filters: {
     childId?: number;
     schoolId?: number;
     gradeSectionId?: number;
   };
-  
+
   // Error handling
   error: string | null;
-  
+
   // Actions
   loadMore: () => Promise<void>;
   refresh: () => Promise<void>;
-  applyFilters: (newFilters: UsePaymentsDataProps['filters']) => void;
+  applyFilters: (newFilters: UsePaymentsDataProps["filters"]) => void;
   retry: () => void;
-  
+
   // Summary data
   totalToPay: number;
   totalPaid: number;
@@ -62,7 +62,7 @@ export const usePaymentsData = ({
   // Hooks
   const userInfo = useUserInfo();
   const getParentInstallments = useGetParentInstallments();
-  
+
   // State
   const [installments, setInstallments] = useState<ParentInstallmentDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -73,12 +73,12 @@ export const usePaymentsData = ({
   const [filters, setFilters] = useState(initialFilters);
   const [error, setError] = useState<string | null>(null);
   const [hasNextPage, setHasNextPage] = useState(true);
-  
+
   // Track initialization state to prevent multiple initial loads
   const [isInitialized, setIsInitialized] = useState(false);
   const isLoadingRef = useRef(false); // Prevent concurrent requests
   const hasTriedInitialLoad = useRef(false); // Track if we've attempted initial load
-  
+
   // Get parent ID (null until useUserInfo() rehydrates)
   const parentId = userInfo?.parentId ? parseInt(userInfo.parentId, 10) : null;
 
@@ -93,7 +93,7 @@ export const usePaymentsData = ({
     errorMessage?: string;
   }> => {
     if (!parentId) {
-      return { success: false, errorMessage: 'Parent ID not found' };
+      return { success: false, errorMessage: "Parent ID not found" };
     }
 
     const params: GetParentInstallmentsParams = {
@@ -105,7 +105,6 @@ export const usePaymentsData = ({
       schoolGradeSectionId: currentFilters.gradeSectionId,
     };
 
-    
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const response = await getParentInstallments(params);
@@ -117,100 +116,100 @@ export const usePaymentsData = ({
             totalCount: response.data.totalCount,
           };
         } else {
-          const msg = response.error ?? 'Failed to fetch installments';
+          const msg = response.error ?? "Failed to fetch installments";
           if (attempt === 2) {
             return { success: false, errorMessage: msg };
           }
-          await new Promise(res => setTimeout(res, 300));
+          await new Promise((res) => setTimeout(res, 300));
           continue;
         }
       } catch (ex: any) {
         if (attempt === 2) {
-          return { success: false, errorMessage: ex.message ?? 'Erreur interne' };
+          return {
+            success: false,
+            errorMessage: ex.message ?? "Erreur interne",
+          };
         }
-        await new Promise(res => setTimeout(res, 300));
+        await new Promise((res) => setTimeout(res, 300));
         continue;
       }
     }
 
-    return { success: false, errorMessage: 'Unknown error' };
+    return { success: false, errorMessage: "Unknown error" };
   };
 
   // Internal fetch function with concurrency protection
-  const fetchInstallmentsInternal = useCallback(async (
-    page: number = 1,
-    currentFilters: any = {},
-    isRefresh: boolean = false,
-    isLoadMore: boolean = false
-  ) => {
-    
-
-    // Prevent concurrent requests
-    if (isLoadingRef.current) {
-      
-      return;
-    }
-
-    if (!parentId) {
-      setError('Parent ID not found');
-      return;
-    }
-
-    try {
-      isLoadingRef.current = true;
-
-      if (isRefresh) {
-        setIsRefreshing(true);
-      } else if (isLoadMore) {
-        setIsLoadingMore(true);
-      } else if (page === 1) {
-        setIsLoading(true);
-      }
-      setError(null);
-
-      const result = await fetchInstallmentsOnce(page, currentFilters);
-      if (!result.success) {
-        setError(result.errorMessage ?? 'Échec de la récupération');
+  const fetchInstallmentsInternal = useCallback(
+    async (
+      page: number = 1,
+      currentFilters: any = {},
+      isRefresh: boolean = false,
+      isLoadMore: boolean = false
+    ) => {
+      // Prevent concurrent requests
+      if (isLoadingRef.current) {
         return;
       }
 
-      const newItems = result.data ?? [];
-      const total = result.totalCount ?? 0;
-
-      if (isRefresh || page === 1) {
-        setInstallments(newItems);
-        setCurrentPage(1);
-      } else {
-        setInstallments(prev => [...prev, ...newItems]);
-        setCurrentPage(page);
+      if (!parentId) {
+        setError("Parent ID not found");
+        return;
       }
 
-      setTotalCount(total);
-      const totalPages = Math.ceil(total / pageSize);
-      setHasNextPage(page < totalPages);
+      try {
+        isLoadingRef.current = true;
 
-      // Mark as initialized only on successful page 1 load
-      if (page === 1) {
-        setIsInitialized(true);
+        if (isRefresh) {
+          setIsRefreshing(true);
+        } else if (isLoadMore) {
+          setIsLoadingMore(true);
+        } else if (page === 1) {
+          setIsLoading(true);
+        }
+        setError(null);
+
+        const result = await fetchInstallmentsOnce(page, currentFilters);
+        if (!result.success) {
+          setError(result.errorMessage ?? "Échec de la récupération");
+          return;
+        }
+
+        const newItems = result.data ?? [];
+        const total = result.totalCount ?? 0;
+
+        if (isRefresh || page === 1) {
+          setInstallments(newItems);
+          setCurrentPage(1);
+        } else {
+          setInstallments((prev) => [...prev, ...newItems]);
+          setCurrentPage(page);
+        }
+
+        setTotalCount(total);
+        const totalPages = Math.ceil(total / pageSize);
+        setHasNextPage(page < totalPages);
+
+        // Mark as initialized only on successful page 1 load
+        if (page === 1) {
+          setIsInitialized(true);
+        }
+      } catch (error: any) {
+        console.error("💥 fetchInstallmentsInternal error:", error);
+        setError(error.message || "An error occurred");
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+        setIsRefreshing(false);
+        isLoadingRef.current = false;
       }
-
-      
-    } catch (error: any) {
-      console.error('💥 fetchInstallmentsInternal error:', error);
-      setError(error.message || 'An error occurred');
-    } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
-      setIsRefreshing(false);
-      isLoadingRef.current = false;
-    }
-  }, [parentId, getParentInstallments, pageSize]);
+    },
+    [parentId, getParentInstallments, pageSize]
+  );
 
   // Load more data
   const loadMore = useCallback(async () => {
     // CRITICAL: Don't allow load more if page 1 was never loaded
     if (!isInitialized) {
-     
       if (!isLoadingRef.current && hasTriedInitialLoad.current === false) {
         hasTriedInitialLoad.current = true;
         await fetchInstallmentsInternal(1, filters, false, false);
@@ -219,25 +218,31 @@ export const usePaymentsData = ({
     }
 
     if (!hasNextPage || isLoadingMore || isLoading || isLoadingRef.current) {
-     
       return;
     }
-   
+
     const nextPage = currentPage + 1;
     await fetchInstallmentsInternal(nextPage, filters, false, true);
-  }, [hasNextPage, isLoadingMore, isLoading, currentPage, filters, isInitialized, fetchInstallmentsInternal]);
+  }, [
+    hasNextPage,
+    isLoadingMore,
+    isLoading,
+    currentPage,
+    filters,
+    isInitialized,
+    fetchInstallmentsInternal,
+  ]);
 
   // Pull to refresh
   const refresh = useCallback(async () => {
-   
     await fetchInstallmentsInternal(1, filters, true, false);
   }, [filters, fetchInstallmentsInternal]);
 
   // Apply filters
   const applyFilters = useCallback(
-    (newFilters: UsePaymentsDataProps['filters']) => {
+    (newFilters: UsePaymentsDataProps["filters"]) => {
       const filtersToApply = newFilters || {};
-      console.log('🔍 Applying filters:', filtersToApply);
+      console.log("🔍 Applying filters:", filtersToApply);
       setFilters(filtersToApply);
       setCurrentPage(1);
       setIsInitialized(false); // Reset initialization to allow re-fetch
@@ -251,7 +256,6 @@ export const usePaymentsData = ({
 
   // Retry function
   const retry = useCallback(() => {
-  
     setIsInitialized(false); // Reset initialization to allow re-fetch
     hasTriedInitialLoad.current = false; // Reset the attempt flag
     fetchInstallmentsInternal(1, filters, false, false);
@@ -259,25 +263,26 @@ export const usePaymentsData = ({
 
   // Initial load effect - SINGLE POINT OF TRUTH
   useEffect(() => {
-    
-
     // Only load data once when:
     // 1. We have a parentId
     // 2. We haven't initialized yet
     // 3. We haven't tried loading yet
     // 4. We're not currently loading
-    if (parentId && !isInitialized && !hasTriedInitialLoad.current && !isLoadingRef.current) {
-    
+    if (
+      parentId &&
+      !isInitialized &&
+      !hasTriedInitialLoad.current &&
+      !isLoadingRef.current
+    ) {
       hasTriedInitialLoad.current = true; // Mark that we've attempted
       fetchInstallmentsInternal(1, filters, false, false);
-    } 
+    }
   }, [parentId, isInitialized]);
 
   // Force initial load if we somehow have no data after a delay
   useEffect(() => {
     if (parentId && !isInitialized && !isLoadingRef.current) {
       const timer = setTimeout(() => {
-        
         if (!isInitialized && !isLoadingRef.current) {
           hasTriedInitialLoad.current = true;
           fetchInstallmentsInternal(1, filters, false, false);
@@ -292,19 +297,19 @@ export const usePaymentsData = ({
   const summaryData = useMemo(() => {
     const now = new Date();
     const totalToPay = installments
-      .filter(inst => !inst.isPaid)
+      .filter((inst) => !inst.isPaid)
       .reduce((sum, inst) => sum + inst.amount + (inst.lateFee ?? 0), 0);
     const totalPaid = installments
-      .filter(inst => inst.isPaid)
+      .filter((inst) => inst.isPaid)
       .reduce((sum, inst) => sum + inst.amount, 0);
     const overdueInstallments = installments.filter(
-      inst => !inst.isPaid && new Date(inst.dueDate) < now
+      (inst) => !inst.isPaid && new Date(inst.dueDate) < now
     );
     const totalOverdue = overdueInstallments.reduce(
       (sum, inst) => sum + inst.amount + (inst.lateFee ?? 0),
       0
     );
-    const paidCount = installments.filter(inst => inst.isPaid).length;
+    const paidCount = installments.filter((inst) => inst.isPaid).length;
     const overdueCount = overdueInstallments.length;
 
     return {
@@ -316,9 +321,60 @@ export const usePaymentsData = ({
     };
   }, [installments]);
 
+  // Sort installments by priority: Late (6 + overdue) > In Progress (11) > Pending (6) > Processed (8)
+  const sortedInstallments = useMemo(() => {
+    const now = new Date();
+
+    // Priority order helper function
+    const getStatusPriority = (inst: ParentInstallmentDto): number => {
+      const isOverdue = new Date(inst.dueDate) < now;
+
+      // Status 6 (Pending) + overdue = Late - highest priority (1)
+      if (inst.statusId === 6 && isOverdue && !inst.isPaid) {
+        return 1;
+      }
+      // Status 11 (In Progress/Retry) - second priority (2)
+      if (inst.statusId === 11) {
+        return 2;
+      }
+      // Status 6 (Pending) not overdue - third priority (3)
+      if (inst.statusId === 6 && !inst.isPaid) {
+        return 3;
+      }
+      // Status 8 (Processed/Paid) - lowest priority (4)
+      if (inst.statusId === 8 || inst.isPaid) {
+        return 4;
+      }
+      // Any other status - after pending but before paid
+      return 3.5;
+    };
+
+    return [...installments].sort((a, b) => {
+      const priorityA = getStatusPriority(a);
+      const priorityB = getStatusPriority(b);
+
+      // First sort by priority
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      // Within same priority, sort by due date (earliest first for unpaid, latest first for paid)
+      const dateA = new Date(a.dueDate).getTime();
+      const dateB = new Date(b.dueDate).getTime();
+
+      // For paid items, show most recent first
+      if (priorityA === 4) {
+        return dateB - dateA;
+      }
+
+      // For unpaid items, show earliest due date first
+      return dateA - dateB;
+    });
+  }, [installments]);
+
   return {
-    // Data
-    installments,
+    // Data - return sorted installments
+    installments: sortedInstallments,
 
     // Loading states
     isLoading,
