@@ -1,13 +1,16 @@
 // Register screen (French) — uses CustomInput, PhoneInput, PasswordInput
 import { CustomInput, PasswordInput, PhoneInput } from '@/components/CustomInput/CustomInput';
-import { colors } from '@/constants/theme';
+import { colors, radius, shadows, spacingX, spacingY } from '@/constants/theme';
 import { useRegisterUser } from '@/services/userServices';
+import { scale, scaleFont } from '@/utils/stylings';
+import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -17,7 +20,8 @@ import {
 } from 'react-native';
 
 interface RegisterData {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   countryCode: string;
   mobileNumber: string;
   email: string;
@@ -28,7 +32,8 @@ interface RegisterData {
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState<RegisterData>({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     countryCode: '242',
     mobileNumber: '',
     email: '',
@@ -40,6 +45,21 @@ export default function RegisterScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
+  // Error popup state
+  const [errorPopup, setErrorPopup] = useState<{ visible: boolean; title: string; message: string }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
+
+  const showErrorPopup = (title: string, message: string) => {
+    setErrorPopup({ visible: true, title, message });
+  };
+
+  const hideErrorPopup = () => {
+    setErrorPopup({ visible: false, title: '', message: '' });
+  };
+
   const registerUser = useRegisterUser();
 
   const updateFormData = (field: keyof RegisterData, value: string) => setFormData(prev => ({ ...prev, [field]: value }));
@@ -47,8 +67,12 @@ export default function RegisterScreen() {
   const validateForm = (): boolean => {
     const nextErrors: Record<string, string> = {};
 
-    if (!formData.fullName.trim() || formData.fullName.trim().length < 3) {
-      nextErrors.fullName = 'Le nom complet est requis (au moins 3 caractères)';
+    if (!formData.firstName.trim() || formData.firstName.trim().length < 2) {
+      nextErrors.firstName = 'Le prénom est requis (au moins 2 caractères)';
+    }
+
+    if (!formData.lastName.trim() || formData.lastName.trim().length < 2) {
+      nextErrors.lastName = 'Le nom est requis (au moins 2 caractères)';
     }
 
     if ((formData.countryCode || '').trim() !== '242') {
@@ -76,7 +100,7 @@ export default function RegisterScreen() {
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-      Alert.alert('Erreur', nextErrors[Object.keys(nextErrors)[0]]);
+      showErrorPopup('Erreur de validation', nextErrors[Object.keys(nextErrors)[0]]);
       return false;
     }
     return true;
@@ -86,14 +110,9 @@ export default function RegisterScreen() {
     if (!validateForm()) return;
     setIsLoading(true);
     try {
-      // map fullName -> firstName / lastName (first token as firstName, rest as lastName)
-      const names = formData.fullName.trim().split(/\s+/);
-      const firstName = names.shift() || '';
-      const lastName = names.join(' ') || '';
-
       const resp = await registerUser({
-        firstName,
-        lastName,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
         password: formData.password,
         civilId: formData.civilId.trim(),
         countryCode: (formData.countryCode || '242').replace(/^\+/, ''),
@@ -106,12 +125,34 @@ export default function RegisterScreen() {
           { text: 'OK', onPress: () => router.replace('/(auth)/login') },
         ]);
       } else {
-        const errMsg = resp.data?.message || resp.error || 'L\u2019inscription a échoué. Veuillez réessayer.';
-        Alert.alert('Erreur', String(errMsg));
+        // Handle error message - could be string or object
+        let errMsg = 'L\u2019inscription a échoué. Veuillez réessayer.';
+        if (resp.data?.message) {
+          errMsg = resp.data.message;
+        } else if (resp.error) {
+          if (typeof resp.error === 'string') {
+            errMsg = resp.error;
+          } else if (typeof resp.error === 'object' && resp.error !== null) {
+            errMsg = (resp.error as any).message || JSON.stringify(resp.error);
+          }
+        }
+        showErrorPopup('Erreur', errMsg);
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.response?.data?.error || String(err);
-      Alert.alert('Erreur', String(msg));
+      // Extract error message from various possible structures
+      let msg = 'Une erreur inattendue s\'est produite. Veuillez réessayer.';
+      if (err?.response?.data?.message) {
+        msg = err.response.data.message;
+      } else if (err?.response?.data?.error) {
+        msg = typeof err.response.data.error === 'string'
+          ? err.response.data.error
+          : JSON.stringify(err.response.data.error);
+      } else if (err?.message) {
+        msg = err.message;
+      } else if (typeof err === 'string') {
+        msg = err;
+      }
+      showErrorPopup('Erreur', msg);
     } finally {
       setIsLoading(false);
     }
@@ -127,7 +168,9 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.form}>
-            <CustomInput label="Nom complet" placeholder="Entrez votre nom complet" value={formData.fullName} onChangeText={(v) => updateFormData('fullName', v)} error={errors.fullName} />
+            <CustomInput label="Prénom" placeholder="Entrez votre prénom" value={formData.firstName} onChangeText={(v) => updateFormData('firstName', v)} error={errors.firstName} />
+
+            <CustomInput label="Nom" placeholder="Entrez votre nom de famille" value={formData.lastName} onChangeText={(v) => updateFormData('lastName', v)} error={errors.lastName} />
 
             <View style={styles.row}>
               <View style={{ flex: 0.3 }}>
@@ -156,6 +199,28 @@ export default function RegisterScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Error Popup Modal */}
+      <Modal
+        visible={errorPopup.visible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={hideErrorPopup}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalIconContainer}>
+              <Ionicons name="alert-circle" size={scale(48)} color={colors.error.main} />
+            </View>
+            <Text style={styles.modalTitle}>{errorPopup.title}</Text>
+            <Text style={styles.modalMessage}>{errorPopup.message}</Text>
+            <TouchableOpacity style={styles.modalButton} onPress={hideErrorPopup} activeOpacity={0.8}>
+              <Text style={styles.modalButtonText}>Compris</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -175,6 +240,54 @@ const styles = StyleSheet.create({
   footer: { alignItems: 'center', marginTop: 24 },
   footerText: { fontSize: 14, color: '#6b7280' },
   link: { color: '#3b82f6', fontWeight: '600' },
+  // Error Popup Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacingX._20,
+  },
+  modalContainer: {
+    backgroundColor: colors.background.default,
+    borderRadius: radius._20,
+    padding: spacingX._25,
+    width: '100%',
+    maxWidth: scale(340),
+    alignItems: 'center',
+    ...shadows.lg,
+  },
+  modalIconContainer: {
+    marginBottom: spacingY._15,
+  },
+  modalTitle: {
+    fontSize: scaleFont(20),
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: spacingY._10,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: scaleFont(15),
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: scaleFont(22),
+    marginBottom: spacingY._25,
+  },
+  modalButton: {
+    backgroundColor: colors.primary.main,
+    borderRadius: radius._12,
+    paddingVertical: spacingY._15,
+    paddingHorizontal: spacingX._30,
+    width: '100%',
+    alignItems: 'center',
+    ...shadows.sm,
+  },
+  modalButtonText: {
+    color: colors.text.white,
+    fontSize: scaleFont(16),
+    fontWeight: '600',
+  },
 });
 
 

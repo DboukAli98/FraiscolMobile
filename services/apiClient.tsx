@@ -10,12 +10,14 @@ interface UseApiInstanceProps {
   headers?: Record<string, string>;
   responseType?: "json" | "text" | "blob" | "arraybuffer" | "document" | "stream";
   withCredentials?: boolean;
+  skipAuth?: boolean;
 }
 
 const useApiInstance = ({
   headers,
   responseType = "json",
   withCredentials = true,
+  skipAuth = false,
 }: UseApiInstanceProps = {}) => {
   //#region Global Hooks
 
@@ -48,7 +50,7 @@ const useApiInstance = ({
 
     const requestInterceptorId = instance.interceptors.request.use(
       (config) => {
-        if (token) {
+        if (token && !skipAuth) {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
@@ -96,7 +98,7 @@ const useApiInstance = ({
     (instance as any)._responseInterceptorId = responseInterceptorId;
 
     return instance;
-  }, [memoizedHeaders, responseType, withCredentials, dispatch, timeout, token]);
+  }, [memoizedHeaders, responseType, withCredentials, dispatch, timeout, token, skipAuth]);
 
   useEffect(() => {
     return () => {

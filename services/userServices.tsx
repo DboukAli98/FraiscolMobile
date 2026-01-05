@@ -980,6 +980,7 @@ export const useRegisterUser = () => {
       'Content-Type': 'application/json',
       'Accept-Language': 'en',
     },
+    skipAuth: true, // Registration should not send auth token
   });
 
   const registerUser = useCallback(
