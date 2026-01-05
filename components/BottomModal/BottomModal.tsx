@@ -158,21 +158,6 @@ export const BottomModal: React.FC<BottomModalProps> = ({
         }).start();
     };
 
-    const openModal = () => {
-        Animated.parallel([
-            Animated.timing(slideAnim, {
-                toValue: SCREEN_HEIGHT - currentHeight,
-                duration: animationDuration,
-                useNativeDriver: false,
-            }),
-            Animated.timing(backdropAnim, {
-                toValue: 1,
-                duration: animationDuration,
-                useNativeDriver: false,
-            }),
-        ]).start();
-    };
-
     const closeModal = () => {
         Animated.parallel([
             Animated.timing(slideAnim, {
@@ -236,13 +221,38 @@ export const BottomModal: React.FC<BottomModalProps> = ({
 
     useEffect(() => {
         if (visible) {
+            // Reset all states and animated values before opening
+            setIsExpanded(false);
+            setIsDragging(false);
+
+            // Reset animated values immediately
             slideAnim.setValue(SCREEN_HEIGHT);
             backdropAnim.setValue(0);
             panY.setValue(0);
+
+            // Use initialHeight directly to avoid stale closure issues
+            const targetHeight = SCREEN_HEIGHT - initialHeight;
+
+            // Animate to open position
+            Animated.parallel([
+                Animated.timing(slideAnim, {
+                    toValue: targetHeight,
+                    duration: animationDuration,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(backdropAnim, {
+                    toValue: 1,
+                    duration: animationDuration,
+                    useNativeDriver: false,
+                }),
+            ]).start();
+        } else {
+            // When closing, ensure values are reset for next open
+            panY.setValue(0);
             setIsExpanded(false);
-            openModal();
+            setIsDragging(false);
         }
-    }, [visible]);
+    }, [visible, initialHeight, animationDuration]);
 
     if (!visible) return null;
 

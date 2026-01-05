@@ -17,6 +17,7 @@ import { router } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -88,6 +89,21 @@ const MerchandisesScreen = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [paymentReference, setPaymentReference] = useState<string>('');
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
+
+  // Error popup state
+  const [errorPopup, setErrorPopup] = useState<{ visible: boolean; title: string; message: string }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
+
+  const showErrorPopup = useCallback((title: string, message: string) => {
+    setErrorPopup({ visible: true, title, message });
+  }, []);
+
+  const hideErrorPopup = useCallback(() => {
+    setErrorPopup({ visible: false, title: '', message: '' });
+  }, []);
   //#endregion
 
   const {
@@ -196,12 +212,12 @@ const MerchandisesScreen = () => {
 
   const handleOpenCart = useCallback(() => {
     if (cartStats.count === 0) {
-      Alert.alert('Panier vide', 'Votre panier est vide.');
+      showErrorPopup('Panier vide', 'Votre panier est vide.');
       return;
     }
 
     setShowPaymentConfirmModal(true);
-  }, [cartStats.count]);
+  }, [cartStats.count, showErrorPopup]);
 
   const handleCloseCart = useCallback(() => {
     setCartModalVisible(false);
@@ -222,13 +238,13 @@ const MerchandisesScreen = () => {
 
     const subscriberMsisdn = (userInfo as any)?.phoneNumber;
     if (!subscriberMsisdn) {
-      Alert.alert('Téléphone manquant', 'Votre numéro de téléphone est nécessaire pour procéder au paiement.');
+      showErrorPopup('Téléphone manquant', 'Votre numéro de téléphone est nécessaire pour procéder au paiement.');
       return;
     }
 
     const amount = cartStats.total;
     if (amount <= 0) {
-      Alert.alert('Montant invalide', 'Le montant du panier est invalide.');
+      showErrorPopup('Montant invalide', 'Le montant du panier est invalide.');
       return;
     }
 
@@ -268,17 +284,31 @@ const MerchandisesScreen = () => {
         }, 1000);
       } else {
         setShowPaymentConfirmModal(false);
-        const msg = resp?.error || 'Échec de l\'initiation du paiement.';
-        Alert.alert('Erreur de paiement', String(msg));
+        let msg = 'Échec de l\'initiation du paiement.';
+        // Extract error message from various response formats
+        if (resp) {
+          const respAny = resp as any;
+          if (typeof respAny.error === 'string' && respAny.error) {
+            msg = respAny.error;
+          } else if (typeof respAny.message === 'string' && respAny.message) {
+            msg = respAny.message;
+          } else if (respAny.data?.error && typeof respAny.data.error === 'string') {
+            msg = respAny.data.error;
+          } else if (respAny.data?.message && typeof respAny.data.message === 'string') {
+            msg = respAny.data.message;
+          }
+        }
+        showErrorPopup('Erreur de paiement', msg);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Payment error', err);
       setShowPaymentConfirmModal(false);
-      Alert.alert('Erreur', 'Une erreur est survenue lors du paiement.');
+      const errorMsg = err?.message || 'Une erreur est survenue lors du paiement.';
+      showErrorPopup('Erreur', errorMsg);
     } finally {
       setIsPaying(false);
     }
-  }, [cartStats.total, initiateAirtelCollection, isPaying, userInfo, cartItems]);
+  }, [cartStats.total, initiateAirtelCollection, isPaying, userInfo, cartItems, showErrorPopup]);
 
   // Memoized key extractor
   const keyExtractor = useCallback((item: MerchandiseListItem) =>
@@ -617,6 +647,28 @@ const MerchandisesScreen = () => {
           />
         </View>
       </BottomModal>
+
+      {/* Error Popup Modal */}
+      <Modal
+        visible={errorPopup.visible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={hideErrorPopup}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalIconContainer}>
+              <Ionicons name="alert-circle" size={scale(48)} color={colors.error.main} />
+            </View>
+            <Text style={styles.modalTitle}>{errorPopup.title}</Text>
+            <Text style={styles.modalMessage}>{errorPopup.message}</Text>
+            <TouchableOpacity style={styles.modalButton} onPress={hideErrorPopup} activeOpacity={0.8}>
+              <Text style={styles.modalButtonText}>Compris</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScreenView>
   );
 };
@@ -895,5 +947,54 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(16),
     fontWeight: '700',
     color: colors.primary.main,
+  },
+
+  // Error Popup Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacingX._20,
+  },
+  modalContainer: {
+    backgroundColor: colors.background.default,
+    borderRadius: radius._20,
+    padding: spacingX._25,
+    width: '100%',
+    maxWidth: scale(340),
+    alignItems: 'center',
+    ...shadows.lg,
+  },
+  modalIconContainer: {
+    marginBottom: spacingY._15,
+  },
+  modalTitle: {
+    fontSize: scaleFont(20),
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: spacingY._10,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: scaleFont(15),
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: scaleFont(22),
+    marginBottom: spacingY._25,
+  },
+  modalButton: {
+    backgroundColor: colors.primary.main,
+    borderRadius: radius._12,
+    paddingVertical: spacingY._15,
+    paddingHorizontal: spacingX._30,
+    width: '100%',
+    alignItems: 'center',
+    ...shadows.sm,
+  },
+  modalButtonText: {
+    color: colors.text.white,
+    fontSize: scaleFont(16),
+    fontWeight: '600',
   },
 });

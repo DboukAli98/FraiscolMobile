@@ -21,7 +21,7 @@ import { scale, scaleFont, SCREEN_HEIGHT } from '@/utils/stylings';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -63,6 +63,21 @@ const PaymentsScreen: React.FC = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentInstallment, setPaymentInstallment] = useState<ParentInstallmentDto | null>(null);
   const [paymentReference, setPaymentReference] = useState<string>('');
+
+  // Error popup state
+  const [errorPopup, setErrorPopup] = useState<{ visible: boolean; title: string; message: string }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
+
+  const showErrorPopup = useCallback((title: string, message: string) => {
+    setErrorPopup({ visible: true, title, message });
+  }, []);
+
+  const hideErrorPopup = useCallback(() => {
+    setErrorPopup({ visible: false, title: '', message: '' });
+  }, []);
 
 
 
@@ -210,27 +225,32 @@ const PaymentsScreen: React.FC = () => {
 
         setShowPaymentConfirmModal(false);
 
-        const errorMessage = response.error?.message || response.error || 'Échec de l\'initiation du paiement';
-        Alert.alert(
-          'Erreur de paiement',
-          `Impossible d'initier le paiement: ${errorMessage}\n\nVeuillez réessayer.`,
-          [{ text: 'OK' }]
-        );
+        let errorMessage = 'Échec de l\'initiation du paiement';
+        // Extract error message from various response formats
+        if (response) {
+          if (typeof response.error === 'string' && response.error) {
+            errorMessage = response.error;
+          } else if (typeof response.message === 'string' && response.message) {
+            errorMessage = response.message;
+          } else if (response.data?.error && typeof response.data.error === 'string') {
+            errorMessage = response.data.error;
+          } else if (response.data?.message && typeof response.data.message === 'string') {
+            errorMessage = response.data.message;
+          }
+        }
+        showErrorPopup('Erreur de paiement', `Impossible d'initier le paiement: ${errorMessage}\n\nVeuillez réessayer.`);
       }
     } catch (error: any) {
       console.error('💥 Payment flow error:', error);
 
       setShowPaymentConfirmModal(false);
 
-      Alert.alert(
-        'Erreur inattendue',
-        error.message || 'Une erreur inattendue s\'est produite. Veuillez réessayer.',
-        [{ text: 'OK' }]
-      );
+      const errorMsg = error?.message || 'Une erreur inattendue s\'est produite. Veuillez réessayer.';
+      showErrorPopup('Erreur inattendue', errorMsg);
     } finally {
       setIsProcessingPayment(false);
     }
-  }, [paymentInstallment, userInfo, generatePaymentReference, initiateAirtelCollection, refresh]);
+  }, [paymentInstallment, userInfo, generatePaymentReference, initiateAirtelCollection, refresh, showErrorPopup]);
 
 
   // Event handlers
@@ -241,13 +261,13 @@ const PaymentsScreen: React.FC = () => {
 
   const handlePaymentPay = useCallback(async (installment: ParentInstallmentDto) => {
     if (installment.isPaid) {
-      Alert.alert('Déjà payé', 'Ce paiement a déjà été effectué.');
+      showErrorPopup('Déjà payé', 'Ce paiement a déjà été effectué.');
       return;
     }
 
     setPaymentInstallment(installment);
     setShowPaymentConfirmModal(true);
-  }, []);
+  }, [showErrorPopup]);
 
   // Render payment item
   const renderPaymentItem = useCallback(
@@ -810,6 +830,28 @@ const PaymentsScreen: React.FC = () => {
         </View>
       </BottomModal>
 
+      {/* Error Popup Modal */}
+      <Modal
+        visible={errorPopup.visible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={hideErrorPopup}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalIconContainer}>
+              <Ionicons name="alert-circle" size={scale(48)} color={colors.error.main} />
+            </View>
+            <Text style={styles.modalTitle}>{errorPopup.title}</Text>
+            <Text style={styles.modalMessage}>{errorPopup.message}</Text>
+            <TouchableOpacity style={styles.modalButton} onPress={hideErrorPopup} activeOpacity={0.8}>
+              <Text style={styles.modalButtonText}>Compris</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </ScreenView>
   );
 };
@@ -1213,5 +1255,54 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 'auto',
     marginBottom: spacingY._10,
+  },
+
+  // Error Popup Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacingX._20,
+  },
+  modalContainer: {
+    backgroundColor: colors.background.default,
+    borderRadius: radius._20,
+    padding: spacingX._25,
+    width: '100%',
+    maxWidth: scale(340),
+    alignItems: 'center',
+    ...shadows.lg,
+  },
+  modalIconContainer: {
+    marginBottom: spacingY._15,
+  },
+  modalTitle: {
+    fontSize: scaleFont(20),
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: spacingY._10,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: scaleFont(15),
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: scaleFont(22),
+    marginBottom: spacingY._25,
+  },
+  modalButton: {
+    backgroundColor: colors.primary.main,
+    borderRadius: radius._12,
+    paddingVertical: spacingY._15,
+    paddingHorizontal: spacingX._30,
+    width: '100%',
+    alignItems: 'center',
+    ...shadows.sm,
+  },
+  modalButtonText: {
+    color: colors.text.white,
+    fontSize: scaleFont(16),
+    fontWeight: '600',
   },
 });
